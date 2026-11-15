@@ -1,0 +1,30 @@
+// Every message key the database functions raise. The app maps each one to pt-BR text.
+export const ERROR_KEYS = [
+  'completion_not_approved',
+  'completion_not_pending',
+  'family_exists',
+  'insufficient_balance',
+  'invalid_amount',
+  'invalid_child_ids',
+  'invalid_cost',
+  'invalid_hint',
+  'invalid_pin_format',
+  'invalid_points',
+  'invalid_steps',
+  'invalid_task_target',
+  'invalid_timezone',
+  'invalid_weekdays',
+  'kind_immutable',
+  'last_guardian',
+  'name_required',
+  'not_authorized',
+  'not_found',
+  'pending_redemption_exists',
+  'pin_not_allowed',
+  'pin_required',
+  'reason_required',
+  'redemption_not_pending',
+  'task_not_available',
+] as const
+
+export type ErrorKey = (typeof ERROR_KEYS)[number]

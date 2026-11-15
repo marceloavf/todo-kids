@@ -1,0 +1,87 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Nunito Variable', ui-rounded, system-ui, sans-serif;
+  --color-paper: #fbf7f0;
+  --color-ink: #26242e;
+  --color-muted: #6d6a78;
+  --color-line: #e3ddd2;
+  --color-dash: #c9c2b5;
+  --color-ok: #1e7d4d;
+  --color-wait: #8a5a00;
+  --color-wait-soft: #fff0c2;
+  --color-gold: #d59a00;
+  --color-kid: var(--kid);
+  --color-kid-soft: var(--kid-soft);
+  --color-kid-ink: var(--kid-ink);
+}
+
+:root {
+  --kid: #f2603f;
+  --kid-soft: color-mix(in oklab, var(--kid) 16%, white);
+  --kid-ink: color-mix(in oklab, var(--kid) 55%, black);
+  color-scheme: light;
+}
+
+html,
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+button,
+a,
+input {
+  touch-action: manipulation;
+}
+
+button {
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 3px;
+}
+
+/* The child's reduced-motion setting (fx.ts sets the attribute) also stops CSS transitions and press offsets. */
+[data-reduced-motion] *,
+[data-reduced-motion] *::before,
+[data-reduced-motion] *::after {
+  transition-duration: 0s !important;
+  animation-duration: 0s !important;
+  animation-iteration-count: 1 !important;
+  translate: none !important;
+}
+
+.emoji-glyph {
+  display: inline-grid;
+  place-items: center;
+  container-type: size;
+  line-height: 1;
+}
+
+.emoji-glyph > span {
+  font-size: 82cqh;
+}
+
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top), 0.75rem);
+}
+
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}

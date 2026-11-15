@@ -1,0 +1,349 @@
+<!doctype html>
+<!-- Protótipo descartável. Serve só para escolher o layout das telas. Não é código do app. -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Todo Kids · modelos de tela</title>
+<style>
+:root{
+  --page:#ece7de; --ink:#26242e; --muted:#6d6a78; --line:#e3ddd2; --card:#fff; --paper:#fbf7f0;
+  --ok:#23915a; --ok-soft:#dff4e8; --wait:#b97a00; --wait-soft:#fff0c2; --no:#c2412d;
+  --kid:#f2603f; --kid-soft:#ffe2d8; --kid-ink:#7b2512;
+  --w:390px; --h:844px;
+  font-family: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--page);color:var(--ink);display:flex;flex-direction:column;align-items:center;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
+
+.bar{width:100%;display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 12px;background:#26242e;color:#fff;font-size:13px}
+.bar .grp{display:flex;align-items:center;gap:6px;overflow-x:auto}
+.bar .lbl{opacity:.7;white-space:nowrap}
+.seg{display:flex;background:#3a3745;border-radius:10px;padding:3px}
+.seg button{padding:7px 11px;border-radius:8px;color:#d9d6e2;white-space:nowrap;font-weight:600}
+.seg button[aria-pressed=true]{background:#fff;color:#26242e}
+.note{font-size:12px;color:var(--muted);padding:8px 12px;text-align:center;max-width:640px}
+
+.phone{box-sizing:content-box;width:var(--w);height:var(--h);margin:8px 0 24px;background:var(--paper);border:10px solid #1c1b22;border-radius:42px;overflow:hidden;position:relative;flex:none;box-shadow:0 18px 40px rgba(0,0,0,.18)}
+@media (max-width:520px){
+  .phone{width:100vw;height:auto;flex:1;min-height:0;margin:0;border:0;border-radius:0;box-shadow:none}
+  .note{display:none}
+}
+.app{height:100%;display:flex;flex-direction:column}
+.body{flex:1;min-height:0;overflow-y:auto;container-type:size}
+canvas#fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+
+/* cabeçalho do filho */
+.khead{display:flex;align-items:center;gap:12px;padding:14px 16px 8px}
+.ava{width:56px;height:56px;border-radius:50%;background:var(--kid);display:grid;place-items:center;font-size:32px;flex:none}
+.khead h1{font-size:22px;font-weight:800;line-height:1.1}
+.khead small{display:block;font-size:13px;color:var(--muted);font-weight:600}
+.saldo{margin-left:auto;background:var(--card);border:2px solid var(--line);border-radius:999px;padding:8px 14px;font-weight:800;font-size:20px;white-space:nowrap}
+.prog{padding:0 16px 10px}
+.prog .track{height:14px;background:var(--line);border-radius:99px;overflow:hidden}
+.prog .fill{height:100%;background:var(--kid);border-radius:99px;transition:width .3s}
+.prog span{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-top:4px}
+
+.tabs{display:flex;border-top:2px solid var(--line);background:var(--card)}
+.tabs button{flex:1;padding:10px 4px 12px;font-weight:800;font-size:13px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px}
+.tabs button i{font-style:normal;font-size:26px;line-height:1}
+.tabs button[aria-current=page]{color:var(--kid-ink);box-shadow:inset 0 4px 0 var(--kid)}
+
+.badge{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:16px;font-weight:900;color:#fff;flex:none}
+.badge.done{background:var(--ok)} .badge.wait{background:var(--wait)}
+.pts{font-weight:800;font-size:14px;color:var(--kid-ink);background:var(--kid-soft);border-radius:99px;padding:3px 9px;white-space:nowrap}
+
+/* A: cartões por rotina */
+.A h2{font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 18px 6px}
+.A .row{display:flex;align-items:center;gap:12px;width:calc(100% - 28px);margin:0 14px 8px;padding:8px 12px;min-height:64px;background:var(--card);border:2px solid var(--line);border-radius:18px;text-align:left}
+.A .row .ic{font-size:34px;width:44px;text-align:center;flex:none}
+.A .row b{flex:1;font-size:17px;font-weight:700;line-height:1.15}
+.A .row .ring{width:34px;height:34px;border-radius:50%;border:3px dashed #c9c2b5;flex:none}
+.A .row.done{background:var(--ok-soft);border-color:var(--ok)}
+.A .row.done b{text-decoration:line-through;color:var(--muted)}
+.A .row.wait{background:var(--wait-soft);border-color:var(--wait)}
+.A .row em{display:block;font-style:normal;font-size:12px;font-weight:700;color:var(--wait)}
+
+/* B: uma tarefa por vez */
+.B{height:100%;display:flex;flex-direction:column;align-items:center;padding:4px 20px 16px;text-align:center}
+.B .chip{font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.B .big{flex:1;min-height:0;display:grid;place-items:center;font-size:min(150px,26cqh);line-height:1}
+.B h2{font-size:28px;font-weight:800;line-height:1.1}
+.B .pts{font-size:18px;margin:8px 0 14px;padding:5px 14px}
+.B .go{width:100%;min-height:92px;border-radius:28px;background:var(--kid);color:#fff;font-size:30px;font-weight:900;box-shadow:0 6px 0 var(--kid-ink)}
+.B .go:active{transform:translateY(4px);box-shadow:0 2px 0 var(--kid-ink)}
+.B .later{margin-top:14px;min-height:52px;padding:0 26px;border-radius:99px;border:2px solid var(--line);background:var(--card);font-weight:800;font-size:16px;color:var(--muted)}
+.B .dots{display:flex;gap:7px;margin:14px 0 2px}
+.B .dots i{width:16px;height:16px;border-radius:50%;background:var(--line)}
+.B .dots i.done{background:var(--ok)} .B .dots i.wait{background:var(--wait);border-radius:4px}
+.B .dots i.cur{outline:3px solid var(--kid);outline-offset:2px}
+.B .hint{font-size:13px;font-weight:700;color:var(--wait)}
+
+/* C: quadro de figuras */
+.C{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:6px 14px 14px}
+.C .tile{position:relative;aspect-ratio:1;border-radius:22px;border:3px dashed #c9c2b5;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px}
+.C .tile .ic{font-size:46px;line-height:1.05}
+.C .tile b{font-size:12.5px;font-weight:800;line-height:1.1;text-align:center}
+.C .tile .st{position:absolute;top:6px;left:8px;font-size:12px;color:#d59a00;letter-spacing:-1px}
+.C .tile .badge{position:absolute;top:-6px;right:-6px;border:3px solid var(--paper)}
+.C .tile.done{background:var(--kid-soft);border:3px solid var(--kid)}
+.C .tile.wait{background:var(--wait-soft);border:3px solid var(--wait)}
+
+/* recompensas */
+.R{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:6px 14px 14px}
+.R .rw{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.R .rw .ic{font-size:48px;line-height:1}
+.R .rw b{font-size:15px;font-weight:800;line-height:1.15;min-height:34px}
+.R .rw .track{width:100%;height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.R .rw .fill{height:100%;background:var(--kid)}
+.R .rw small{font-size:12px;font-weight:700;color:var(--muted)}
+.R .rw button{width:100%;min-height:52px;border-radius:16px;background:var(--kid);color:#fff;font-weight:900;font-size:17px}
+.R .rw button:disabled{background:var(--line);color:var(--muted)}
+.R .rw.asked{border-color:var(--wait);background:var(--wait-soft)}
+
+/* perfis e PIN */
+.P{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:20px}
+.P h1{font-size:28px;font-weight:900}
+.P .who{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;max-width:300px}
+.P .who button{display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:800;font-size:18px}
+.P .who .ava{width:108px;height:108px;font-size:60px}
+.P .who .adult .ava{background:#dcd7cd;font-size:44px}
+.P .who small{font-size:12px;color:var(--muted);font-weight:700}
+.pin{display:flex;gap:14px}
+.pin i{width:18px;height:18px;border-radius:50%;border:3px solid var(--ink)}
+.pin i.on{background:var(--ink)}
+.keys{display:grid;grid-template-columns:repeat(3,72px);gap:12px}
+.keys button{height:72px;border-radius:50%;background:var(--card);border:2px solid var(--line);font-size:26px;font-weight:800}
+
+/* responsável */
+.G{background:#f4f5f7;height:100%;display:flex;flex-direction:column;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.G header{display:flex;align-items:center;padding:16px;background:#fff;border-bottom:1px solid #e3e5ea}
+.G header h1{font-size:19px;font-weight:700}
+.G header button{margin-left:auto;font-size:14px;font-weight:600;color:#3b4a6b;padding:8px 12px;border:1px solid #d5d9e2;border-radius:10px}
+.G section{background:#fff;border:1px solid #e3e5ea;border-radius:14px;margin:12px 14px 0;overflow:hidden}
+.G h2{display:flex;align-items:center;font-size:15px;font-weight:700;padding:12px 14px;border-bottom:1px solid #eef0f3}
+.G h2 .n{background:#b97a00;color:#fff;border-radius:99px;font-size:12px;padding:1px 8px;margin-left:8px}
+.G h2 button{margin-left:auto;font-size:13px;font-weight:700;color:#fff;background:#23915a;border-radius:9px;padding:8px 12px}
+.G .it{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #eef0f3}
+.G .it:last-child{border-bottom:0}
+.G .it .ic{font-size:26px;width:32px;text-align:center}
+.G .it div{flex:1;min-width:0}
+.G .it b{display:block;font-size:15px;font-weight:600}
+.G .it small{font-size:13px;color:#6b7280}
+.G .it .yes,.G .it .nope{width:44px;height:44px;border-radius:12px;font-size:20px;font-weight:800;flex:none}
+.G .it .yes{background:#dff4e8;color:#23915a} .G .it .nope{background:#fde8e4;color:#c2412d}
+.G .empty{padding:16px 14px;font-size:14px;color:#6b7280}
+.G .kid{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #eef0f3}
+.G .kid:last-child{border-bottom:0}
+.G .kid .ava{width:44px;height:44px;font-size:24px}
+.G .kid .track{height:8px;background:#e9ebef;border-radius:99px;overflow:hidden;margin-top:6px}
+.G .kid .fill{height:100%}
+.G .kid .s{font-weight:700;font-size:15px;white-space:nowrap}
+.G nav{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 14px 16px}
+.G nav button{background:#fff;border:1px solid #e3e5ea;border-radius:14px;padding:14px 12px;text-align:left;font-size:15px;font-weight:600;min-height:52px}
+
+.bare .bar,.bare .note{display:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="grp"><span class="lbl">Tela do filho</span>
+    <div class="seg" id="segV">
+      <button data-v="A">A · Cartões</button><button data-v="B">B · Uma por vez</button><button data-v="C">C · Quadro</button>
+    </div></div>
+  <div class="grp"><span class="lbl">Ver</span>
+    <div class="seg" id="segS">
+      <button data-s="picker">Perfis</button><button data-s="today">Hoje</button><button data-s="rewards">Recompensas</button><button data-s="guardian">Responsável</button>
+    </div></div>
+  <div class="grp"><div class="seg" id="segZ"><button data-z="390x844">390×844</button><button data-z="360x640">360×640</button></div>
+    <div class="seg"><button id="reset">Reiniciar</button></div></div>
+</div>
+<p class="note">Protótipo descartável com dados de exemplo. Toque nas tarefas, peça uma recompensa e aprove pelo perfil de responsável. Qualquer PIN de 4 dígitos entra.</p>
+<div class="phone"><div class="app" id="app"></div><canvas id="fx"></canvas></div>
+
+<script>
+const KIDS = {
+  lia:  {name:'Lia',  age:5,  emoji:'🦊', c:'#f2603f', soft:'#ffe2d8', ink:'#7b2512'},
+  theo: {name:'Theo', age:10, emoji:'🦖', c:'#2f7de1', soft:'#dbe9ff', ink:'#123a73'},
+};
+const REWARDS = [
+  {id:1, i:'🎮', t:'30 min de videogame', cost:50},
+  {id:2, i:'🍦', t:'Sorvete', cost:80},
+  {id:3, i:'🎬', t:'Escolher o filme', cost:100},
+  {id:4, i:'🏞️', t:'Passeio no parque', cost:150},
+];
+const seedTasks = () => [
+  {id:1, r:'Manhã', i:'🛏️', t:'Arrumar a cama', p:5, ap:false, s:'todo'},
+  {id:2, r:'Manhã', i:'🪥', t:'Escovar os dentes', p:5, ap:false, s:'done'},
+  {id:3, r:'Manhã', i:'🥣', t:'Tomar café', p:5, ap:false, s:'todo'},
+  {id:4, r:'Manhã', i:'🎒', t:'Arrumar a mochila', p:5, ap:false, s:'todo'},
+  {id:5, r:'Depois da escola', i:'📚', t:'Lição de casa', p:10, ap:true, s:'wait'},
+  {id:6, r:'Depois da escola', i:'🐶', t:'Dar comida ao Thor', p:5, ap:false, s:'todo'},
+  {id:7, r:'Depois da escola', i:'🧸', t:'Guardar brinquedos', p:10, ap:true, s:'todo'},
+  {id:8, r:'Depois da escola', i:'🚿', t:'Tomar banho', p:5, ap:false, s:'todo'},
+  {id:9, r:'Só hoje', i:'🍽️', t:'Pôr a mesa', p:10, ap:false, s:'todo'},
+];
+const fresh = () => ({tasks: seedTasks(), saldo: {lia:120, theo:45}, asked: null, theoAsk: true, skipped: [], pin: ''});
+
+const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
+let ui = {v: hash.v || 'C', s: hash.s || 'picker', kid: hash.kid || 'lia', z: hash.z || '390x844'};
+if (hash.bare) document.body.classList.add('bare');   // esconde a barra de modelos nas capturas
+let st = fresh();
+let lockUntil = 0;
+const app = document.getElementById('app');
+const kid = () => KIDS[ui.kid];
+const count = s => st.tasks.filter(t => t.s === s).length;
+
+function mark(id){
+  if (Date.now() < lockUntil) return;            // ignora o toque repetido logo após concluir
+  const t = st.tasks.find(t => t.id === id);
+  if (!t || t.s !== 'todo') return;              // o filho não desmarca
+  t.s = t.ap ? 'wait' : 'done';
+  if (!t.ap) st.saldo[ui.kid] += t.p;
+  lockUntil = Date.now() + 700;
+  confetti();
+  render();
+}
+
+const head = () => {
+  const done = count('done') + count('wait'), n = st.tasks.length;
+  return `<div class="khead">
+    <button class="ava" data-s="picker" aria-label="Trocar de perfil">${kid().emoji}</button>
+    <div><h1>${kid().name}</h1><small>Hoje, segunda</small></div>
+    <div class="saldo" aria-label="Saldo">⭐ ${st.saldo[ui.kid]}</div></div>
+  <div class="prog"><div class="track"><div class="fill" style="width:${done / n * 100}%"></div></div>
+    <span>${done} de ${n} feitas</span></div>`;
+};
+const tabs = cur => `<div class="tabs">
+  <button data-s="today" ${cur === 'today' ? 'aria-current="page"' : ''}><i>☀️</i>Hoje</button>
+  <button data-s="rewards" ${cur === 'rewards' ? 'aria-current="page"' : ''}><i>🎁</i>Recompensas</button></div>`;
+const badge = t => t.s === 'done' ? '<span class="badge done">✓</span>' : t.s === 'wait' ? '<span class="badge wait">⏳</span>' : '';
+
+function viewA(){
+  const groups = [...new Set(st.tasks.map(t => t.r))];
+  return `<div class="A">` + groups.map(g => `<h2>${g}</h2>` + st.tasks.filter(t => t.r === g).map(t =>
+    `<button class="row ${t.s}" data-task="${t.id}"><span class="ic">${t.i}</span>
+      <b>${t.t}${t.s === 'wait' ? '<em>Esperando o responsável</em>' : ''}</b>
+      <span class="pts">+${t.p}</span>${badge(t) || '<span class="ring"></span>'}</button>`).join('')).join('') + `</div>`;
+}
+function viewB(){
+  let todo = st.tasks.filter(t => t.s === 'todo' && !st.skipped.includes(t.id));
+  if (!todo.length && count('todo')) { st.skipped = []; todo = st.tasks.filter(t => t.s === 'todo'); }
+  const cur = todo[0];
+  const dots = `<div class="dots">${st.tasks.map(t => `<i class="${t.s} ${cur && t.id === cur.id ? 'cur' : ''}"></i>`).join('')}</div>`;
+  if (!cur) return `<div class="B"><div class="big">🎉</div><h2>Tudo feito por hoje!</h2>
+    ${count('wait') ? `<p class="hint">${count('wait')} esperando o responsável</p>` : ''}${dots}</div>`;
+  return `<div class="B"><span class="chip">${cur.r}</span><div class="big">${cur.i}</div>
+    <h2>${cur.t}</h2><span class="pts">+${cur.p} pontos${cur.ap ? ' · precisa de aprovação' : ''}</span>
+    <button class="go" data-task="${cur.id}">Feito!</button>
+    <button class="later" data-skip="${cur.id}">Depois</button>${dots}</div>`;
+}
+function viewC(){
+  return `<div class="C">` + st.tasks.map(t =>
+    `<button class="tile ${t.s}" data-task="${t.id}" aria-label="${t.t}, ${t.p} pontos">
+      <span class="st">${'★'.repeat(t.p / 5)}</span><span class="ic">${t.i}</span><b>${t.t}</b>${badge(t)}</button>`).join('') + `</div>`;
+}
+function viewRewards(){
+  const s = st.saldo[ui.kid];
+  return `<div class="R">` + REWARDS.map(r => {
+    const asked = st.asked === r.id, can = s >= r.cost && !st.asked;
+    return `<div class="rw ${asked ? 'asked' : ''}"><span class="ic">${r.i}</span><b>${r.t}</b>
+      <div class="track"><div class="fill" style="width:${Math.min(100, s / r.cost * 100)}%"></div></div>
+      <small>${asked ? 'Pedido enviado ⏳' : s >= r.cost ? `⭐ ${r.cost}` : `⭐ ${r.cost} · faltam ${r.cost - s}`}</small>
+      <button data-ask="${r.id}" ${can ? '' : 'disabled'}>${asked ? 'Esperando' : 'Quero!'}</button></div>`;
+  }).join('') + `</div>`;
+}
+function viewPicker(){
+  const k = id => `<button data-kid="${id}"><span class="ava" style="background:${KIDS[id].c}">${KIDS[id].emoji}</span>${KIDS[id].name}</button>`;
+  const g = n => `<button class="adult" data-s="pin"><span class="ava">🔒</span>${n}<small>com PIN</small></button>`;
+  return `<div class="P"><h1>Quem é você?</h1><div class="who">${k('lia')}${k('theo')}${g('Mamãe')}${g('Papai')}</div></div>`;
+}
+function viewPin(){
+  const keys = [1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k => k === '' ? '<span></span>' : `<button data-key="${k}">${k}</button>`).join('');
+  return `<div class="P"><h1>PIN da Mamãe</h1>
+    <div class="pin">${[0,1,2,3].map(i => `<i class="${i < st.pin.length ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="keys">${keys}</div><button data-s="picker" style="font-weight:700;color:var(--muted)">Voltar</button></div>`;
+}
+function viewGuardian(){
+  const wait = st.tasks.filter(t => t.s === 'wait');
+  const ask = REWARDS.find(r => r.id === st.asked);
+  const items = wait.map(t => `<div class="it"><span class="ic">${t.i}</span><div><b>${t.t}</b><small>Lia · ${t.p} pontos</small></div>
+      <button class="nope" data-rej="${t.id}" aria-label="Reprovar">✕</button><button class="yes" data-apr="${t.id}" aria-label="Aprovar">✓</button></div>`)
+    .concat(ask ? [`<div class="it"><span class="ic">${ask.i}</span><div><b>Resgate: ${ask.t}</b><small>Lia · ${ask.cost} pontos</small></div>
+      <button class="nope" data-redeem="no" aria-label="Recusar">✕</button><button class="yes" data-redeem="yes" aria-label="Confirmar">✓</button></div>`] : [])
+    .concat(st.theoAsk ? [`<div class="it"><span class="ic">🎮</span><div><b>Resgate: 30 min de videogame</b><small>Theo · 50 pontos · saldo insuficiente</small></div>
+      <button class="nope" data-theo aria-label="Recusar">✕</button></div>`] : []);
+  const done = count('done') + count('wait');
+  const kidRow = (k, d, n) => `<div class="kid"><span class="ava" style="background:${k.c}">${k.emoji}</span>
+    <div style="flex:1"><b>${k.name}</b> <small style="color:#6b7280">${d} de ${n} hoje</small>
+      <div class="track"><div class="fill" style="width:${d / n * 100}%;background:${k.c}"></div></div></div>`;
+  return `<div class="G"><header><h1>Olá, Mamãe</h1><button data-s="picker">Sair</button></header><div class="body">
+    <section><h2>Pendências${items.length ? `<span class="n">${items.length}</span>` : ''}
+      ${wait.length > 1 ? '<button data-aprall>Aprovar tarefas</button>' : ''}</h2>
+      ${items.join('') || '<p class="empty">Nada esperando por você.</p>'}</section>
+    <section><h2>Filhos</h2>
+      ${kidRow(KIDS.lia, done, st.tasks.length)}<span class="s">⭐ ${st.saldo.lia}</span></div>
+      ${kidRow(KIDS.theo, 5, 7)}<span class="s">⭐ ${st.saldo.theo}</span></div></section>
+    <nav><button>Rotinas</button><button>Tarefa avulsa</button><button>Recompensas</button><button>Ajuste de pontos</button><button>Extrato</button><button>Família</button></nav>
+  </div></div>`;
+}
+
+function render(){
+  const [w, h] = ui.z.split('x');
+  const root = document.documentElement.style;
+  root.setProperty('--w', w + 'px'); root.setProperty('--h', h + 'px');
+  root.setProperty('--kid', kid().c); root.setProperty('--kid-soft', kid().soft); root.setProperty('--kid-ink', kid().ink);
+  const child = body => head() + `<div class="body">${body}</div>` + tabs(ui.s);
+  app.innerHTML = ui.s === 'picker' ? viewPicker() : ui.s === 'pin' ? viewPin() : ui.s === 'guardian' ? viewGuardian()
+    : ui.s === 'rewards' ? child(viewRewards()) : child({A: viewA, B: viewB, C: viewC}[ui.v]());
+  for (const b of document.querySelectorAll('#segV button')) b.setAttribute('aria-pressed', b.dataset.v === ui.v);
+  for (const b of document.querySelectorAll('#segS button')) b.setAttribute('aria-pressed', b.dataset.s === ui.s);
+  for (const b of document.querySelectorAll('#segZ button')) b.setAttribute('aria-pressed', b.dataset.z === ui.z);
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const d = b.dataset;
+  if (b.id === 'reset') st = fresh();
+  else if (d.v) { ui.v = d.v; if (ui.s !== 'rewards') ui.s = 'today'; }
+  else if (d.z) ui.z = d.z;
+  else if (d.kid) { ui.kid = d.kid; ui.s = 'today'; }
+  else if (d.s) { ui.s = d.s; st.pin = ''; }
+  else if (d.task) return mark(+d.task);
+  else if (d.skip) st.skipped.push(+d.skip);
+  else if (d.ask) st.asked = +d.ask;
+  else if (d.key) {
+    st.pin = d.key === '⌫' ? st.pin.slice(0, -1) : st.pin + d.key;
+    if (st.pin.length === 4) { st.pin = ''; ui.s = 'guardian'; }
+  }
+  else if (d.apr) approve(+d.apr);
+  else if (d.rej) st.tasks.find(t => t.id === +d.rej).s = 'todo';
+  else if ('aprall' in d) st.tasks.filter(t => t.s === 'wait').forEach(t => approve(t.id));
+  else if (d.redeem) { if (d.redeem === 'yes') st.saldo.lia -= REWARDS.find(r => r.id === st.asked).cost; st.asked = null; }
+  else if ('theo' in d) st.theoAsk = false;
+  render();
+});
+function approve(id){ const t = st.tasks.find(t => t.id === id); t.s = 'done'; st.saldo.lia += t.p; }
+
+function confetti(){
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cv = document.getElementById('fx'), cx = cv.getContext('2d');
+  const W = cv.width = cv.clientWidth, H = cv.height = cv.clientHeight;
+  const cols = [kid().c, '#ffc93c', '#23915a', '#2f7de1', '#b34fd1'];
+  const ps = Array.from({length: 70}, () => ({x: W / 2, y: H * .45, vx: (Math.random() - .5) * 14, vy: -Math.random() * 13 - 3,
+    s: 6 + Math.random() * 6, c: cols[Math.random() * cols.length | 0], r: Math.random() * 6}));
+  let f = 0;
+  (function tick(){
+    cx.clearRect(0, 0, W, H);
+    for (const p of ps) { p.vy += .45; p.x += p.vx; p.y += p.vy; p.r += .2;
+      cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r); cx.fillStyle = p.c; cx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * .6); cx.restore(); }
+    if (++f < 70) requestAnimationFrame(tick); else cx.clearRect(0, 0, W, H);
+  })();
+}
+render();
+</script>
+</body>
+</html>
