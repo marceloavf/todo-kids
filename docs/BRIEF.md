@@ -7,6 +7,7 @@ O Todo Kids é um aplicativo em que os responsáveis montam as tarefas do dia de
 A versão 1 inclui os itens abaixo.
 
 - Login único da família e perfis de responsável e de filho.
+- Aparelho do filho, vinculado a um filho por código de vínculo ou QR.
 - Rotinas por dia da semana, atribuídas a um ou mais filhos, e tarefas avulsas.
 - Conclusão de tarefas pelo filho, com pontos na hora ou depois da aprovação.
 - Cartão da tarefa, com explicação em passos, leitura em voz alta e confirmação antes de marcar.
@@ -29,9 +30,16 @@ Estes itens ficam fora da versão 1.
 ## Perfis e acesso
 
 - A família entra uma vez por aparelho com e-mail e senha.
-- Ao abrir o app, a pessoa escolhe um perfil. O filho toca no avatar. O responsável digita o PIN dele.
+- No aparelho com o login da família, a pessoa escolhe um perfil ao abrir o app. O filho toca no avatar. O responsável digita o PIN dele.
 - Todos os responsáveis têm os mesmos poderes. O extrato registra qual responsável aprovou, ajustou ou estornou.
 - O servidor confere o PIN e limita as tentativas. A decisão está no [ADR 0001](adr/0001-login-unico-por-familia-com-pin-verificado-no-servidor.md).
+- O filho com aparelho próprio usa um aparelho do filho, que abre direto no perfil dele, sem os perfis e sem o login da família. A decisão está no [ADR 0004](adr/0004-aparelho-do-filho-com-login-anonimo.md).
+- Na tela Família, o responsável toca em "Vincular aparelho" no perfil do filho e vê o QR, o código de vínculo e quanto falta para ele vencer. O cartão mostra "Vinculado!" quando o aparelho usa o código.
+- O código tem 6 caracteres sem os que se confundem, vale uma vez e vence em 10 minutos. Gerar outro cancela o anterior. No app instalado, o filho digita o código em "Tenho um código", na Entrada. O QR leva o código num link. No Android, o link vincula o aparelho direto. No Safari do iPhone, o link não gasta o código. Ele mostra como adicionar o app à tela inicial e o código para digitar no app.
+- Cinco códigos errados descartam o login anônimo do aparelho, que começa de novo. A versão 1 não tem CAPTCHA.
+- O aparelho do filho só lê os dados da família que valem para todos e os dados do próprio filho. Ele não vê saldo, conclusões, resgates nem extrato dos irmãos.
+- Um filho pode ter vários aparelhos. A tela Família lista cada um com quem vinculou e quando, e um botão "Desvincular". O aparelho do filho não tem botão de sair.
+- O aparelho fica vinculado até um responsável desvinculá-lo ou arquivar o filho. Desvinculado, ele volta para a Entrada.
 
 ## Regras
 
@@ -74,7 +82,7 @@ Estes itens ficam fora da versão 1.
 
 | Tela | Quem usa | O que faz |
 | --- | --- | --- |
-| Entrada | Família | Login com e-mail e senha, uma vez por aparelho. |
+| Entrada | Família, filho | Login com e-mail e senha, uma vez por aparelho, ou o código de vínculo do aparelho do filho. |
 | Perfis | Todos | Escolha do perfil. Pede o PIN para responsável. |
 | Hoje | Filho | Tarefas do dia, saldo e progresso ("6 feitas · 2 esperando"), em um quadro de figuras de três colunas (modelo C do protótipo). Com mais tarefas do que cabem, a tela rola e os blocos mantêm o tamanho. O toque em um bloco abre o cartão da tarefa. |
 | Recompensas | Filho | Recompensas com custo, quanto falta e pedido de resgate, confirmado em um cartão igual ao da tarefa. |
@@ -82,7 +90,7 @@ Estes itens ficam fora da versão 1.
 | Rotinas | Responsável | Criar e editar rotinas, tarefas e tarefas avulsas. |
 | Recompensas | Responsável | Criar e editar recompensas. |
 | Extrato | Responsável | Histórico de pontos de um filho, ajuste e estorno. |
-| Família | Responsável | Perfis, cores, avatares, PIN, fuso horário e as opções de cada filho. |
+| Família | Responsável | Perfis, cores, avatares, PIN, fuso horário, as opções de cada filho e os aparelhos de cada filho. |
 
 A tela do filho segue estas regras, tiradas da [pesquisa de interface](research/ui-e-bibliotecas.md).
 
@@ -144,8 +152,10 @@ A tela do filho segue estas regras, tiradas da [pesquisa de interface](research/
 | Lançamento do extrato | filho, tipo (conclusão, ajuste, estorno, resgate), valor pedido e valor aplicado com sinal, motivo, responsável |
 | Recompensa | família, nome, ícone, custo, arquivada |
 | Resgate | recompensa, filho, custo guardado, estado (pendente, confirmado, recusado), responsável que decidiu. Só um resgate pendente por filho. |
+| Aparelho do filho | login anônimo, família, filho, responsável que vinculou, data |
+| Código de vínculo | filho, hash do código, validade, responsável que gerou. O aplicativo não lê esta entidade. |
 
-O aplicativo só lê os dados da própria família direto do banco, menos a credencial do responsável. Toda gravação passa por uma função do servidor, que aplica as regras acima em uma transação. As funções de responsável exigem a autorização descrita no [ADR 0001](adr/0001-login-unico-por-familia-com-pin-verificado-no-servidor.md).
+O aplicativo só lê os dados da própria família direto do banco, menos a credencial do responsável e o código de vínculo. O aparelho do filho lê só o que vale para todos e os dados do próprio filho. Toda gravação passa por uma função do servidor, que aplica as regras acima em uma transação. As funções de responsável exigem a autorização descrita no [ADR 0001](adr/0001-login-unico-por-familia-com-pin-verificado-no-servidor.md).
 
 ## Stack
 
@@ -160,6 +170,7 @@ O aplicativo só lê os dados da própria família direto do banco, menos a cred
 | Fonte | Nunito, hospedada junto com o app | Arredondada, com acentos do português. |
 | Movimento | Motion para molas e transições, `canvas-confetti` para partículas | A tela do filho pede movimento de aplicativo de primeira linha. Mascote e animação de personagem ficam fora. |
 | Sons | Gravações de licença CC0 copiadas para o repositório | Som gravado soa melhor que som gerado por código. |
+| QR | `uqr` na área do responsável | Licença MIT e nenhuma dependência. Gera o QR em SVG. |
 | Voz | Síntese de fala do navegador | Lê a tarefa sem guardar arquivo. A qualidade varia por aparelho. |
 | Testes | Vitest para as regras, contra o Supabase local. Playwright para os fluxos, com emulação de iPhone. | As regras de pontos são o risco principal. |
 
@@ -175,6 +186,9 @@ O servidor calcula o dia, então a versão 1 não precisa de biblioteca de datas
 - Cinco PINs errados bloqueiam o perfil do responsável por 5 minutos. A autorização vence após 15 minutos sem uso.
 - O PIN esquecido pelo único responsável se resolve no painel do Supabase. A versão 1 não tem tela para isso.
 - Dois toques por tarefa deixam a tela do filho mais lenta que a do protótipo aprovado.
+- Ninguém testou o vínculo pelo QR e pelo código num iPhone e num Android reais.
+- O login anônimo está desligado em `supabase/config.toml` e precisa ser ligado também no projeto hospedado.
+- Ninguém verificou se uma função SQL consegue apagar o login anônimo ao desvincular, ou se isso exige a chave de serviço.
 - A ECA Digital (Lei 15.211 de 2025) e a LGPD pedem revisão jurídica antes de publicar para outras famílias.
 
 ## Referências

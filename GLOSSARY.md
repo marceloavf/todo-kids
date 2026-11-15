@@ -19,8 +19,16 @@ Criança da família que cumpre tarefas e acumula pontos próprios.
 _Avoid_: Criança, usuário, jogador
 
 **Perfil** (`Profile`):
-A identidade de um responsável ou de um filho dentro da família, escolhida ao abrir o aplicativo.
+A identidade de um responsável ou de um filho dentro da família. No aparelho com o login da família, a pessoa escolhe o perfil ao abrir o aplicativo.
 _Avoid_: Usuário, login
+
+**Aparelho do filho** (`ChildDevice`):
+Um aparelho vinculado a um único filho, que abre direto no perfil dele sem o login da família. Só um responsável vincula e desvincula o aparelho.
+_Avoid_: Conta do filho, login do filho
+
+**Código de vínculo** (`LinkCode`):
+O código, mostrado também como QR, que um responsável gera para vincular um aparelho a um filho.
+_Avoid_: Convite, senha, token
 
 ### Tarefas
 
