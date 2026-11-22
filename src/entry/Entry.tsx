@@ -10,7 +10,7 @@ type Mode = 'signIn' | 'create'
  * Entrada. Rendered for both signedOut and needsFamily at the same spot, so the "Criar família" form keeps
  * what was typed when sign-up succeeds and only create_family is left to do.
  */
-export function Entry({ signedIn }: { signedIn: boolean }) {
+export function Entry({ signedIn, onPair }: { signedIn: boolean; onPair: () => void }) {
   const { setSession } = useSession()
   const online = useOnline()
   const [mode, setMode] = useState<Mode>('signIn')
@@ -69,6 +69,7 @@ export function Entry({ signedIn }: { signedIn: boolean }) {
             ? 'Uma conta para a família toda.'
             : 'Entre com o e-mail e a senha da família.'}
       </p>
+      {!signedIn && !creating && <button type="button" onClick={onPair} className="mb-4 min-h-12 font-bold underline">Tenho um código</button>}
       <form onSubmit={submit} className="flex flex-col gap-4">
         {!signedIn && (
           <>
@@ -124,7 +125,7 @@ export function Entry({ signedIn }: { signedIn: boolean }) {
         <button onClick={() => void supabase.auth.signOut()} className="mt-6 min-h-12 font-bold text-muted underline">
           Sair desta conta
         </button>
-      ) : (
+      ) : import.meta.env.VITE_FAMILY_PILOT !== 'true' && (
         <button
           onClick={() => {
             setMode(creating ? 'signIn' : 'create')

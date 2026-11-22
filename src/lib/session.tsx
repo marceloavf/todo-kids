@@ -1,10 +1,13 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { navigate } from './route.ts'
 import { callRpc, supabase, type Functions } from './supabase.ts'
 
 export type Session =
   | { kind: 'loading' }
   | { kind: 'signedOut' }
+  | { kind: 'unpaired' }
+  | { kind: 'device'; profileId: string }
   | { kind: 'needsFamily' }
   | { kind: 'picker' }
   | { kind: 'child'; profileId: string }
@@ -27,25 +30,71 @@ async function resolveSignedIn(): Promise<Session> {
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session>({ kind: 'loading' })
+  const cache = useQueryClient()
   useEffect(() => {
+    let generation = 0
+    let previousUser: string | undefined
     const { data } = supabase.auth.onAuthStateChange((event, auth) => {
+      const changed = previousUser !== auth?.user.id
+      if (changed) {
+        generation++
+        previousUser = auth?.user.id
+        cache.clear()
+        if (!auth?.user.is_anonymous) setSession({ kind: 'loading' })
+      }
       if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !auth)) {
         setSession({ kind: 'signedOut' })
         return
       }
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        const current = ++generation
+        if (auth?.user.is_anonymous) {
+          setTimeout(async () => {
+            const { data: id, error } = await supabase.rpc('device_child_id')
+            if (current !== generation || error) return
+            if (!id) cache.clear()
+            setSession(id ? { kind: 'device', profileId: id } : { kind: 'unpaired' })
+          })
+          return
+        }
         // supabase-js deadlocks if another client call is awaited inside this callback.
         setTimeout(() => {
           // Only a fresh start moves on: SIGNED_IN also fires when a tab regains focus, and the Entrada form may have created the family meanwhile.
-          const fromStart = (next: Session) => setSession((now) => (now.kind === 'loading' || now.kind === 'signedOut' ? next : now))
+          const fromStart = (next: Session) => current === generation && setSession((now) => (now.kind === 'loading' || now.kind === 'signedOut' ? next : now))
           resolveSignedIn().then(fromStart, () => fromStart({ kind: 'loading' }))
         })
       }
     })
-    return () => data.subscription.unsubscribe()
-  }, [])
+    return () => {
+      generation++
+      data.subscription.unsubscribe()
+    }
+  }, [cache])
+
+  useEffect(() => {
+    if (session.kind !== 'device') return
+    let active = true
+    async function check() {
+      const { data, error } = await supabase.rpc('device_child_id')
+      if (active && !error && !data) {
+        cache.clear()
+        setSession({ kind: 'unpaired' })
+        await supabase.auth.signOut({ scope: 'local' })
+      }
+    }
+    const timer = window.setInterval(check, 5000)
+    window.addEventListener('focus', check)
+    window.addEventListener('online', check)
+    return () => {
+      active = false
+      clearInterval(timer)
+      window.removeEventListener('focus', check)
+      window.removeEventListener('online', check)
+    }
+  }, [session.kind, cache])
 
   const leaveProfile = () => {
+    if (session.kind === 'device') return
     if (session.kind === 'guardian') callRpc('end_guardian_session', { p_token: session.token }).catch(() => {})
     setSession({ kind: 'picker' })
     navigate('', { replace: true })

@@ -37,7 +37,7 @@ async function markThroughCard(page: Page, tile: Locator) {
   await expect(dialog).toBeHidden()
 }
 
-test('a new family sets up a day, the child marks it, the guardian rejects with a hint, approves and adjusts', async ({ page }) => {
+async function setupFamily(page: Page) {
   page.on('dialog', (dialog) => void dialog.accept())
   await page.goto('/')
 
@@ -83,7 +83,10 @@ test('a new family sets up a day, the child marks it, the guardian rejects with 
   await page.getByRole('textbox', { name: 'Custo em pontos', exact: true }).fill('20')
   await page.getByRole('button', { name: 'Salvar recompensa' }).click()
   await expect(page.getByRole('button', { name: /^Sorvete/ })).toBeVisible()
+}
 
+test('a new family sets up a day, the child marks it, the guardian rejects with a hint, approves and adjusts', async ({ page }) => {
+  await setupFamily(page)
   await page.getByRole('button', { name: 'Sair' }).click()
   await page.getByRole('button', { name: 'Bia' }).click()
   const saldo = (points: number) => page.getByRole('status', { name: `Saldo: ${points} pontos` })
@@ -145,4 +148,49 @@ test('a new family sets up a day, the child marks it, the guardian rejects with 
   await expect(page.getByText('Responsável Teste viu!')).toBeVisible()
   await expect(page.getByText('1 tarefa · +10')).toBeVisible()
   await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+test('a dedicated child device pairs, earns and spends points, then loses access', async ({ page, browser, baseURL }) => {
+  await setupFamily(page)
+  await tab(page, 'Família')
+  await page.getByRole('button', { name: 'Novo filho' }).click()
+  await nameField(page).fill('Léo')
+  await page.getByRole('button', { name: 'Salvar', exact: true }).click()
+  await page.getByRole('button', { name: 'Bia' }).click()
+  await page.getByRole('button', { name: 'Vincular aparelho' }).click()
+  const code = await page.getByText(/^[A-HJ-NP-Z2-9]{6}$/).innerText()
+  const device = await browser.newContext({ baseURL, reducedMotion: 'reduce' })
+  try {
+    const child = await device.newPage()
+    await child.goto('/')
+    await child.getByRole('button', { name: 'Tenho um código' }).click()
+    await child.getByLabel('Código de vínculo').fill(code)
+    await child.getByRole('button', { name: 'Vincular', exact: true }).click()
+    const balance = (points: number) => child.getByRole('status', { name: `Saldo: ${points} pontos` })
+    await expect(balance(0)).toBeVisible()
+    await child.reload()
+    await expect(balance(0)).toBeVisible()
+    await expect(child.getByRole('button', { name: 'Trocar de perfil' })).toHaveCount(0)
+    await expect(page.getByText('Vinculado!')).toBeVisible()
+    await tab(page, 'Início')
+    await markThroughCard(child, child.getByRole('button', { name: /^Lição de casa\./ }))
+    await page.getByRole('button', { name: 'Aprovar', exact: true }).click()
+    await expect(balance(10)).toBeVisible()
+    await tab(page, 'Recompensas')
+    await page.getByRole('button', { name: /^Sorvete/ }).click()
+    await page.getByRole('textbox', { name: 'Custo em pontos' }).fill('10')
+    await page.getByRole('button', { name: 'Salvar recompensa' }).click()
+    await child.getByRole('button', { name: 'Recompensas', exact: true }).click()
+    await child.getByRole('button', { name: /^Sorvete.*Custa 10/ }).click()
+    await child.getByRole('button', { name: 'Quero!' }).click()
+    await tab(page, 'Início')
+    await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
+    await expect(balance(0)).toBeVisible()
+    await tab(page, 'Família')
+    await page.getByRole('button', { name: 'Bia' }).click()
+    await page.getByRole('button', { name: 'Desvincular' }).click()
+    await expect(child.getByRole('button', { name: 'Tenho um código' })).toBeVisible({ timeout: 15000 })
+  } finally {
+    await device.close()
+  }
 })

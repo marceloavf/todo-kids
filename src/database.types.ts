@@ -249,6 +249,13 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
+            pilot_signup_hook: { Args: { event: Json }; Returns: Json }
+            device_child_id: { Args: Record<PropertyKey, never>; Returns: string | null }
+            issue_device_code: { Args: { p_token: string; p_child_id: string }; Returns: { code: string; expires_at: string }[] }
+            redeem_device_code: { Args: { p_code: string }; Returns: string }
+            list_child_devices: { Args: { p_token: string; p_child_id: string }; Returns: { id: string; linked_at: string; guardian_name: string }[] }
+            revoke_child_device: { Args: { p_token: string; p_device_id: string }; Returns: undefined }
+
             "adjust_points":
 { Args: { "p_amount": number,"p_child_id": string,"p_reason": string,"p_token": string }; Returns: {
               "amount": number,

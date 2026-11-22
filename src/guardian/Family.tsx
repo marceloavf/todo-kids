@@ -1,3 +1,4 @@
+import { ChildDevices } from './ChildDevices.tsx'
 import { Archive, ChevronRight, Plus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { EMOJI } from '../lib/Emoji.tsx'
@@ -198,6 +199,7 @@ function ProfileForm({ profile, kind }: { profile?: Profile; kind: Profile['kind
               <EmojiPicker label="Avatar" options={EMOJI.avatars} value={avatar} onChange={(e) => e && setAvatar(e)} />
             </div>
           </div>
+          {profile && <ChildDevices childId={profile.id} />}
           <Section title="Opções na tela do filho">
             <div className={`${CARD} flex flex-col px-4 py-1`}>
               <Toggle label="Ler em voz alta ao abrir o cartão" checked={readAloud} onChange={setReadAloud} />

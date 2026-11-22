@@ -2,6 +2,8 @@ import { WifiOff } from 'lucide-react'
 import { lazy, Suspense, useEffect } from 'react'
 import { ChildApp } from './child/ChildApp.tsx'
 import { Entry } from './entry/Entry.tsx'
+import { DeviceEntry, initialLinkCode } from './entry/DeviceEntry.tsx'
+import { useState } from 'react'
 import { Picker } from './entry/Picker.tsx'
 import { useOnline } from './lib/online.ts'
 import { useFamilyRealtime } from './lib/realtime.ts'
@@ -15,17 +17,22 @@ const PROFILE_ROUTES: Record<string, 'child' | 'guardian'> = { hoje: 'child', re
 
 export function App() {
   const { session, leaveProfile } = useSession()
+  const [pairing, setPairing] = useState(Boolean(initialLinkCode))
   const route = useRoute()
   const online = useOnline()
   const area = PROFILE_ROUTES[route[0] ?? '']
   const inProfile = session.kind === 'child' || session.kind === 'guardian'
-  useFamilyRealtime(inProfile || session.kind === 'picker')
+  useFamilyRealtime(session.kind === 'device' || inProfile || session.kind === 'picker')
 
   // Reopening the app always starts at the picker; the guardian token never outlives the page.
   useEffect(() => navigate('', { replace: true }), [])
 
   // The hash follows the session: back out of a profile (Android back) leaves it, and a stale forward entry is dropped.
   useEffect(() => {
+    if (session.kind === 'device') {
+      if (area !== 'child') navigate('hoje', { replace: true })
+      return
+    }
     if (inProfile && area !== session.kind) leaveProfile()
     else if (!inProfile && area) navigate('', { replace: true })
   }, [area, inProfile, session.kind, leaveProfile])
@@ -41,9 +48,10 @@ export function App() {
         </div>
       )}
       {session.kind === 'loading' && <Loading />}
-      {(session.kind === 'signedOut' || session.kind === 'needsFamily') && <Entry signedIn={session.kind === 'needsFamily'} />}
+      {(session.kind === 'unpaired' || (session.kind === 'signedOut' && pairing)) && <DeviceEntry onCancel={() => setPairing(false)} />}
+      {((session.kind === 'signedOut' && !pairing) || session.kind === 'needsFamily') && <Entry signedIn={session.kind === 'needsFamily'} onPair={() => setPairing(true)} />}
       {session.kind === 'picker' && <Picker />}
-      {session.kind === 'child' && <ChildApp key={session.profileId} profileId={session.profileId} />}
+      {(session.kind === 'device' || session.kind === 'child') && <ChildApp key={session.profileId} profileId={session.profileId} />}
       {session.kind === 'guardian' && (
         <Suspense fallback={<Loading />}>
           <GuardianApp />
