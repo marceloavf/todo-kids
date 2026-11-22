@@ -96,7 +96,7 @@ function ChildArea({ profile }: { profile: Profile }) {
   const route = useRoute()
   const online = useOnline()
   const queryClient = useQueryClient()
-  const { leaveProfile } = useSession()
+  const { session, leaveProfile } = useSession()
   const fx = useChildFx(profile)
   const { data: family } = useFamily()
   const { data: profiles } = useProfiles()
@@ -349,13 +349,13 @@ function ChildArea({ profile }: { profile: Profile }) {
             />
           )}
           {/* Small, muted, and confirmed in a card with an armed button elsewhere on screen, so a stray tap never leaves. */}
-          <motion.button
+          {session.kind !== 'device' && <motion.button
             layoutId="leave-profile"
             onClick={() => setConfirmLeave(true)}
             className="mx-auto mt-4 mb-6 flex min-h-11 items-center gap-1.5 px-4 text-sm font-bold text-muted"
           >
             <Users aria-hidden className="size-4" /> Trocar de perfil
-          </motion.button>
+          </motion.button>}
         </motion.main>
 
         <nav className="pb-safe flex shrink-0 border-t-2 border-line bg-white" aria-label="Seções">
