@@ -249,6 +249,7 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
+            pilot_signup_hook: { Args: { event: Json }; Returns: Json }
             device_child_id: { Args: Record<PropertyKey, never>; Returns: string | null }
             issue_device_code: { Args: { p_token: string; p_child_id: string }; Returns: { code: string; expires_at: string }[] }
             redeem_device_code: { Args: { p_code: string }; Returns: string }

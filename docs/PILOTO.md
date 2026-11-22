@@ -14,6 +14,7 @@ Usar um projeto Supabase exclusivo para o piloto e servir o conteúdo de `dist/`
 
 - Rodar `npm run db:start`, `npm test` e `npm run e2e` em ambiente com Docker e Chrome. Os testes de navegador cobrem o aparelho compartilhado e o aparelho vinculado em uma segunda sessão.
 - Aplicar as migrações ao projeto do piloto. Ativar login anônimo somente depois de validar as novas permissões. Provisionar uma conta de responsável confirmada e configurar o cadastro público de acordo com o acesso pretendido. Usar apelidos e um PIN próprio. O seed contém credenciais públicas de demonstração.
+- Para restringir novos cadastros depois de provisionar o responsável, habilitar o hook Before User Created com a função `public.pilot_signup_hook`. Ele libera os aparelhos anônimos. Usar `VITE_FAMILY_PILOT=true` no build para exibir somente entrada e vínculo.
 - Configurar a URL HTTPS publicada como Site URL no Auth. Gerar o build com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` do piloto. Publicar apenas `dist/`. A chave de serviço é administrativa e deve ficar fora do ambiente de build.
 - Abrir a URL publicada nos aparelhos da família. Fazer o ensaio com dados descartáveis antes de cadastrar as rotinas reais. Guardar o build anterior para restaurar o site se necessário. Uma reversão do site não desfaz migrações nem lançamentos de pontos.
 

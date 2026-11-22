@@ -125,7 +125,7 @@ export function Entry({ signedIn, onPair }: { signedIn: boolean; onPair: () => v
         <button onClick={() => void supabase.auth.signOut()} className="mt-6 min-h-12 font-bold text-muted underline">
           Sair desta conta
         </button>
-      ) : (
+      ) : import.meta.env.VITE_FAMILY_PILOT !== 'true' && (
         <button
           onClick={() => {
             setMode(creating ? 'signIn' : 'create')

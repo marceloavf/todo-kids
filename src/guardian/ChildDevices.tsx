@@ -15,7 +15,7 @@ export function ChildDevices({ childId }: { childId: string }) {
   const devices = useQuery({
     queryKey: ['child-devices', childId, token],
     queryFn: () => callGuardian('list_child_devices', { p_child_id: childId }),
-    refetchInterval: remaining ? 3000 : false,
+    refetchInterval: query => remaining && !query.state.data?.some(d => !issued?.previous.includes(d.id)) ? 3000 : false,
   })
   const linked = issued && devices.data?.some(d => !issued.previous.includes(d.id))
   useEffect(() => {
