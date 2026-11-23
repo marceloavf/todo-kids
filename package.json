@@ -1,6 +1,7 @@
 {
   "name": "todo-kids",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -8,7 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "db:start": "supabase start -x storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor && npm run db:env",
-    "db:env": "supabase status -o env --override-name api.url=VITE_SUPABASE_URL --override-name auth.anon_key=VITE_SUPABASE_ANON_KEY --override-name auth.service_role_key=SUPABASE_SERVICE_ROLE_KEY | grep -E '^(VITE_SUPABASE_URL|VITE_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY)=' > .env.local",
+    "db:env": "supabase status -o env --override-name api.url=VITE_SUPABASE_URL --override-name auth.anon_key=VITE_SUPABASE_ANON_KEY --override-name auth.service_role_key=SUPABASE_SERVICE_ROLE_KEY | node scripts/write-db-env.ts",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset && node --env-file=.env.local scripts/wait-for-api.ts",
     "db:types": "supabase gen types typescript --local > src/database.types.ts",
