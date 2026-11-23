@@ -1,6 +1,6 @@
 import { Check, Repeat } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotionConfig } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { errorMessage } from '../lib/errors.ts'
 import { Emoji } from '../lib/Emoji.tsx'
 import type { TodayTask } from '../lib/parse.ts'
@@ -61,6 +61,7 @@ export function Today({
   onClose: () => void
   onMark: (task: TodayTask) => Promise<void>
 }) {
+  const CardPresence = fx.reduced ? Fragment : AnimatePresence
   const open = tasks.find((t) => t.task_id === openTaskId)
 
   // Every way of closing the card (button, backdrop, Escape, Android back, marking) clears the route.
@@ -111,7 +112,7 @@ export function Today({
           </section>
         ))}
       </div>
-      <AnimatePresence>
+      <CardPresence>
         {open && (
           <TaskCard
             key={open.task_id}
@@ -123,7 +124,7 @@ export function Today({
             onMark={onMark}
           />
         )}
-      </AnimatePresence>
+      </CardPresence>
     </>
   )
 }

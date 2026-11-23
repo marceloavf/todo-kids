@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotionConfig } from 'motion/react'
-import { useRef, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import { errorMessage } from '../lib/errors.ts'
 import { Emoji } from '../lib/Emoji.tsx'
 import type { Redemption, Reward } from '../lib/supabase.ts'
@@ -28,6 +28,7 @@ export function Rewards({
   onClose: () => void
   onRequest: (reward: Reward) => Promise<void>
 }) {
+  const CardPresence = fx.reduced ? Fragment : AnimatePresence
   const open = rewards.find((r) => r.id === openRewardId)
   const reduced = useReducedMotionConfig()
 
@@ -89,7 +90,7 @@ export function Rewards({
           )
         })}
       </ul>
-      <AnimatePresence>
+      <CardPresence>
         {open && (
           <RewardCard
             key={open.id}
@@ -102,7 +103,7 @@ export function Rewards({
             onRequest={onRequest}
           />
         )}
-      </AnimatePresence>
+      </CardPresence>
     </>
   )
 }

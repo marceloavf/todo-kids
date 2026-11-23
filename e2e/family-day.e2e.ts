@@ -19,6 +19,7 @@ test('a paired phone recovers its identity and tasks, then closes yesterday’s 
   let tasksFail = true
   let day = '2026-11-23'
   let empty = false
+  let approved = false
   let submissions = 0
   await page.route('**/rest/v1/**', async route => {
     const name = new URL(route.request().url()).pathname.split('/').at(-1)
@@ -32,7 +33,7 @@ test('a paired phone recovers its identity and tasks, then closes yesterday’s 
     if (name === 'complete_task') submissions++
     if (name === 'today_tasks' && !empty) data = [{
       task_id: 'recurring', child_id: 'child', routine_id: 'morning', routine_name: 'Manhã', day,
-      name: 'Preparar a mochila para a escola', icon: '🎒', status: 'todo', points: 1,
+      name: 'Preparar a mochila para a escola', icon: '🎒', status: approved ? 'done' : 'todo', points: 1,
       steps: [{ text: 'Guarde o caderno' }], requires_approval: true,
     }]
     return route.fulfill({ json: data })
@@ -72,6 +73,21 @@ test('a paired phone recovers its identity and tasks, then closes yesterday’s 
   await page.clock.setSystemTime(new Date('2026-11-25T04:00:00Z'))
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
   await expect(task).toBeVisible()
+  await task.focus()
+  await task.press('Enter')
+  await expect(page.getByRole('dialog')).toContainText('Guarde o caderno')
+  // A guardian decision on another device reaches the open card through a refetch.
+  approved = true
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')))
+  await expect(page.getByRole('dialog', { name: 'Dia completo!' })).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(1)
+  await expect(page.getByRole('dialog')).toBeFocused()
+  await page.clock.runFor(800)
+  await page.keyboard.press('Escape')
+  await page.clock.runFor(800)
+  await expect(page.getByRole('dialog')).toContainText('Guarde o caderno')
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   expect(submissions).toBe(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 })

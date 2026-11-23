@@ -8,6 +8,18 @@ The pilot branch now submits the family day from the open task, rejects stale su
 
 The first implementation passed the database suite, both development browser journeys, and the closed-pilot browser rehearsal, including re-pairing. Further regression coverage exercises startup retry, family midnight and paginated history. The release checklist covers the remaining hosted and participant evidence. [Implementation run](https://github.com/marceloavf/todo-kids/actions/runs/45115878884) · [Release and recovery guide](family-pilot.md)
 
+### Candidate verification record
+
+| Check | Evidence |
+| --- | --- |
+| Family day, resume, and empty-day recovery | A controlled browser clock crosses midnight in São Paulo, closes an open card, and makes zero completion calls. A second simulated wake advances an empty day to an actionable day. The database test rejects a dated mismatch and checks the balance, board, and statement. |
+| Keyboard, text size, and overlays | Edge exercised the built client at 320 CSS pixels with 200% root text and a three-digit balance. The balance wraps. A guardian approval opens the day celebration over a task card. Escape dismisses each layer independently. Reduced motion releases focus immediately. |
+| Long statement | The database-backed browser scenario reads 101 entries created at the same timestamp and another adjustment received between pages. The final history contains 102 distinct entries. |
+| Device polling | A visible, idle Edge fixture sent two link-status requests in 10.5 seconds. A second headless tab left the first tab visible according to the browser. That run provides no background-device measurement. Keep the polling interval until a phone rehearsal can measure revocation on resume. |
+| Family rehearsal and deployment | The operator confirmed that no field device or participant record was available. Camera pairing, installed app storage, actual assistive-technology speech, hosted settings, and the family observation remain open. The branch has not been deployed. |
+
+The following sections preserve the investigation at the baseline commit and the pilot acceptance criteria. Check the workflow result for the candidate revision before deployment. [Candidate checks](https://github.com/marceloavf/todo-kids/actions/workflows/pilot.yml?query=branch%3Apilot%2Ffamily-readiness)
+
 ## What has been verified
 
 The exact revision passed lint, type checks, database tests, and both end-to-end scenarios in CI. Those scenarios exercise a guardian rejecting and approving work and a paired child earning and spending points before revocation. The browser configuration uses system Chrome, touch emulation, and reduced motion. It gives us evidence for those flows under those conditions. The pilot build flag and the hosted Auth hook are separate deployment settings. [CI run](https://github.com/marceloavf/todo-kids/actions/runs/45099453260) · [Browser scenarios](../e2e/main-flow.e2e.ts) · [Browser configuration](../playwright.config.ts)

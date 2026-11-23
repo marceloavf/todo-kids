@@ -200,6 +200,7 @@ test('a dedicated child device pairs, earns and spends points, then loses access
     await expect(page.getByRole('status').filter({ hasText: 'Lição de casa, posição 1.' })).toBeVisible()
     await expect(move).toBeFocused()
     await child.getByRole('button', { name: 'Fechar', exact: true }).click()
+    await expect(child.getByRole('dialog')).toHaveCount(0)
     await expect(homework).toHaveAccessibleName(/^Lição de casa\. Tarefa 1\./)
     await tab(page, 'Início')
     await markThroughCard(child, homework)

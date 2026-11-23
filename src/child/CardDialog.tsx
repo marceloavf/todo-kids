@@ -25,6 +25,7 @@ export function useModal(dialog: RefObject<HTMLElement | null>, onEscape: () => 
     dialogs.push(element)
     root.inert = true
     element.focus()
+    previous?.setAttribute('aria-hidden', 'true')
 
     const onKey = (event: KeyboardEvent) => {
       if (dialogs.at(-1) !== element || event.defaultPrevented) return
@@ -51,7 +52,10 @@ export function useModal(dialog: RefObject<HTMLElement | null>, onEscape: () => 
       const wasTop = dialogs.at(-1) === element
       dialogs.splice(dialogs.indexOf(element), 1)
       const top = dialogs.at(-1)
-      if (top) top.inert = false
+      if (top) {
+        top.inert = false
+        top.removeAttribute('aria-hidden')
+      }
       root.inert = dialogs.length > 0
       if (wasTop) (opener?.isConnected ? opener : top)?.focus({ preventScroll: true })
     }
@@ -125,6 +129,7 @@ export function CardDialog({
       >
         <button
           onClick={() => armedRef.current && onClose()}
+          aria-disabled={!armed}
           aria-label="Fechar"
           className="absolute top-3 right-3 z-10 grid size-12 place-items-center rounded-full bg-paper text-muted"
         >

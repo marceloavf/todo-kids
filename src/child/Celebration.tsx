@@ -46,7 +46,6 @@ export function DayCelebration({ phrase, fx, onDismiss }: { phrase: string; fx: 
       onClick={dismiss}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
       transition={{ duration: 0.12 }}
       className="pt-safe pb-safe fixed inset-0 z-50 overflow-y-auto bg-kid px-6 text-[var(--on-kid,white)] outline-none"
     >

@@ -461,7 +461,7 @@ function ChildArea({ profile }: { profile: Profile }) {
         )}
       </AnimatePresence>
       <NoticeToast notice={notice} fx={fx} onDismiss={() => setNotices((list) => list.slice(1))} />
-      <AnimatePresence>{dayPhrase && <DayCelebration phrase={dayPhrase} fx={fx} onDismiss={() => setDayPhrase(null)} />}</AnimatePresence>
+      {dayPhrase && <DayCelebration phrase={dayPhrase} fx={fx} onDismiss={() => setDayPhrase(null)} />}
     </MotionConfig>
   )
 }
