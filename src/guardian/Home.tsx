@@ -1,5 +1,6 @@
 import { Check, X } from 'lucide-react'
 import { useState } from 'react'
+import { ReadStatus } from '../lib/ReadStatus.tsx'
 import { Emoji } from '../lib/Emoji.tsx'
 import { useProfiles, useTodayTasks } from '../lib/queries.ts'
 import { useGuardian } from '../lib/session.tsx'
@@ -12,17 +13,21 @@ import { Avatar, CARD, confirmed, ErrorText, Field, INPUT, PRIMARY, Section, SEC
 export function Home() {
   const { callGuardian } = useGuardian()
   const today = useFamilyToday()
-  const { data: profiles = [] } = useProfiles()
-  const { data: completions = [], isPending: loadingCompletions } = usePendingCompletions()
-  const { data: redemptions = [], isPending: loadingRedemptions } = usePendingRedemptionsWithReward()
-  const { data: tasks = [] } = useTodayTasks()
+  const profilesQuery = useProfiles()
+  const profiles = profilesQuery.data ?? []
+  const completionQuery = usePendingCompletions()
+  const completions = completionQuery.data ?? []
+  const redemptionQuery = usePendingRedemptionsWithReward()
+  const redemptions = redemptionQuery.data ?? []
+  const tasksQuery = useTodayTasks()
+  const tasks = tasksQuery.data ?? []
   const action = useAction()
   // The pending completion whose "do it again" form is open, and its optional hint.
   const [rejecting, setRejecting] = useState<string | null>(null)
   const [hint, setHint] = useState('')
   const children = profiles.filter((p) => p.kind === 'child')
   const child = (id: string) => children.find((c) => c.id === id)
-  const nothingPending = !loadingCompletions && !loadingRedemptions && completions.length === 0 && redemptions.length === 0
+  const nothingPending = completionQuery.isSuccess && redemptionQuery.isSuccess && completions.length === 0 && redemptions.length === 0
 
   const decide = (ids: string[], approve: boolean) =>
     action.mutate(() => callGuardian('decide_completions', { p_completion_ids: ids, p_approve: approve }))
@@ -37,6 +42,8 @@ export function Home() {
     <>
       <Section title="Pendências">
         <ErrorText>{action.errorText}</ErrorText>
+        <ReadStatus query={completionQuery} subject="as conclusões" />
+        <ReadStatus query={redemptionQuery} subject="os pedidos" />
         {nothingPending && <p className={`${CARD} p-4 font-semibold text-muted`}>Nada esperando você.</p>}
         {completions.length > 1 && (
           <>
@@ -61,7 +68,7 @@ export function Home() {
                   <div className="min-w-0 flex-1">
                     <p className="font-black">{completion.task.name}</p>
                     <p className="text-sm font-bold text-muted">
-                      {who?.name ?? 'Filho arquivado'} · {completion.points} pontos
+                      {who?.name ?? (profilesQuery.isSuccess ? 'Filho arquivado' : 'Filho')} · {completion.points} pontos
                     </p>
                   </div>
                   {label && label !== 'hoje' && (
@@ -126,11 +133,11 @@ export function Home() {
                   <div className="min-w-0 flex-1">
                     <p className="font-black">Resgate: {redemption.reward.name}</p>
                     <p className="text-sm font-bold text-muted">
-                      {who?.name ?? 'Filho arquivado'} · custa {redemption.cost} pontos
+                      {who?.name ?? (profilesQuery.isSuccess ? 'Filho arquivado' : 'Filho')} · custa {redemption.cost} pontos
                     </p>
                   </div>
                 </div>
-                {!covered && (
+                {profilesQuery.isSuccess && !covered && (
                   <p className="rounded-xl bg-wait-soft px-3 py-2 text-sm font-bold text-wait">
                     O saldo de {who?.name ?? 'filho'} ({who?.balance ?? 0}) não cobre mais o custo. Só dá para recusar.
                   </p>
@@ -159,9 +166,11 @@ export function Home() {
       </Section>
 
       <Section title="Hoje">
-        {children.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Cadastre um filho em Família.</p>}
+        <ReadStatus query={profilesQuery} subject="os perfis" />
+        <ReadStatus query={tasksQuery} subject="as tarefas" />
+        {profilesQuery.isSuccess && children.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Cadastre um filho em Família.</p>}
         <ul className="flex flex-col gap-2">
-          {children.map((c) => (
+          {tasksQuery.data && children.map((c) => (
             <ChildDay key={c.id} child={c} tasks={tasks.filter((t) => t.child_id === c.id)} />
           ))}
         </ul>

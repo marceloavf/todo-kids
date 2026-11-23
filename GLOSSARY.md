@@ -10,6 +10,7 @@ Use these terms in issues, designs and database discussions. The Portuguese colu
 | Profile | Perfil | A guardian's or child's identity inside the family. A family login can contain multiple profiles. |
 | Child device | Aparelho do filho | A phone or tablet linked by a guardian to one child. It opens directly in that child's profile. |
 | Link code | Código de vínculo | A short, single-use code that pairs a child device. The QR carries the same code. |
+| Family day | Dia da família | A calendar date in the family's time zone. It determines which tasks apply and which day receives a child's completion. |
 | Routine | Rotina | An ordered set of tasks assigned to one or more children on selected weekdays. |
 | Task | Tarefa | An action with a name, picture, explanation, point value and approval setting. |
 | Explanation | Explicação | The description and optional steps that tell the child how to do a task. |

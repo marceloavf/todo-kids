@@ -1,3 +1,4 @@
+import { ReadStatus } from '../lib/ReadStatus.tsx'
 import { ChildDevices } from './ChildDevices.tsx'
 import { Archive, ChevronRight, Plus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
@@ -10,11 +11,17 @@ import { useAction } from './data.ts'
 import { Avatar, CARD, confirmed, DANGER, EmojiPicker, ErrorText, Field, Header, INPUT, PRIMARY, Section, SECONDARY, Toggle } from './ui.tsx'
 
 // Each keeps white text readable at the child screen's large sizes (contrast of at least 3:1).
-const COLORS = ['#f2603f', '#2f7de1', '#16a34a', '#9333ea', '#db2777', '#0d9488', '#4f46e5', '#b45309']
+const COLOR_NAMES: Record<string, string> = {
+  '#f2603f': 'Coral', '#2f7de1': 'Azul', '#16a34a': 'Verde', '#9333ea': 'Roxo',
+  '#db2777': 'Rosa', '#0d9488': 'Verde-água', '#4f46e5': 'Anil', '#b45309': 'Âmbar',
+}
+const COLORS = Object.keys(COLOR_NAMES)
 
 export function Family() {
-  const { data: family } = useFamily()
-  const { data: profiles = [] } = useProfiles()
+  const familyQuery = useFamily()
+  const family = familyQuery.data
+  const profilesQuery = useProfiles()
+  const profiles = profilesQuery.data ?? []
   const { leave } = useGuardian()
   const children = profiles.filter((p) => p.kind === 'child')
   const guardians = profiles.filter((p) => p.kind === 'guardian')
@@ -22,6 +29,8 @@ export function Family() {
   return (
     <>
       <Header title="Família" />
+      <ReadStatus query={familyQuery} subject="a família" />
+      <ReadStatus query={profilesQuery} subject="os perfis" />
       {family && <FamilyForm key={`${family.name}|${family.timezone}`} family={family} />}
       <ProfileList title="Filhos" profiles={children} newPath="novo-filho" newLabel="Novo filho" />
       <ProfileList title="Responsáveis" profiles={guardians} newPath="novo-responsavel" newLabel="Novo responsável" />
@@ -99,8 +108,9 @@ function ProfileList({ title, profiles, newPath, newLabel }: { title: string; pr
 }
 
 export function ProfileEditor({ id, kind }: { id?: string; kind?: Profile['kind'] }) {
-  const { data: profiles, isPending } = useProfiles()
-  if (id && isPending) return null
+  const query = useProfiles()
+  const profiles = query.data
+  if (id && !profiles) return <ReadStatus query={query} subject="o perfil" />
   const profile = id ? profiles?.find((p) => p.id === id) : undefined
   if (id && !profile) return <Header title="Perfil não encontrado" back />
   return <ProfileForm profile={profile} kind={profile?.kind ?? kind ?? 'child'} />
@@ -185,7 +195,7 @@ function ProfileForm({ profile, kind }: { profile?: Profile; kind: Profile['kind
             <div className="flex flex-wrap gap-2">
               {colors.map((c) => (
                 <label key={c} className="relative grid size-11 cursor-pointer place-items-center rounded-full" style={{ backgroundColor: c }}>
-                  <input type="radio" name="color" value={c} checked={color === c} onChange={() => setColor(c)} aria-label={c} className="peer sr-only" />
+                  <input type="radio" name="color" value={c} checked={color === c} onChange={() => setColor(c)} aria-label={COLOR_NAMES[c] ?? 'Cor personalizada'} className="peer sr-only" />
                   <span className="hidden size-4 rounded-full bg-white peer-checked:block" />
                   <span className="absolute -inset-1 rounded-full peer-checked:ring-3 peer-checked:ring-ink peer-focus-visible:outline-3 peer-focus-visible:outline-ink" />
                 </label>

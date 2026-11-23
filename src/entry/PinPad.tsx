@@ -44,7 +44,7 @@ export function PinPad({ guardian }: { guardian: Profile }) {
         return
       }
       setPin('')
-      void animate(scope.current, { x: [0, -14, 14, -10, 10, -4, 0] }, { duration: 0.45 })
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) void animate(scope.current, { x: [0, -14, 14, -10, 10, -4, 0] }, { duration: 0.45 })
       if (result.lockedUntil) {
         setLockedUntil(result.lockedUntil)
         setMessage(`Muitas tentativas erradas. Tente de novo às ${timeFormat.format(result.lockedUntil)}.`)

@@ -41,9 +41,23 @@ async function setupFamily(page: Page) {
   page.on('dialog', (dialog) => void dialog.accept())
   await page.goto('/')
 
-  await page.getByRole('button', { name: 'Criar família' }).click()
-  await page.getByLabel('E-mail').fill(`e2e-${randomUUID()}@todokids.local`)
-  await page.getByLabel('Senha').fill(randomUUID())
+  if (process.env.VITE_FAMILY_PILOT === 'true') {
+    process.loadEnvFile('.env.local')
+    await expect(page.getByRole('button', { name: 'Criar família' })).toHaveCount(0)
+    const refused = await page.request.post(`${process.env.VITE_SUPABASE_URL}/auth/v1/signup`, {
+      headers: { apikey: process.env.VITE_SUPABASE_ANON_KEY! },
+      data: { email: `fictional-${randomUUID()}@todokids.local`, password: randomUUID() },
+    })
+    expect(await refused.text()).toContain('responsável pelo piloto')
+    expect(refused.ok()).toBe(false)
+    await page.getByLabel('E-mail').fill(process.env.PILOT_TEST_EMAIL!)
+    await page.getByLabel('Senha').fill(process.env.PILOT_TEST_PASSWORD!)
+    await page.getByRole('button', { name: 'Entrar' }).click()
+  } else {
+    await page.getByRole('button', { name: 'Criar família' }).click()
+    await page.getByLabel('E-mail').fill(`e2e-${randomUUID()}@todokids.local`)
+    await page.getByLabel('Senha').fill(randomUUID())
+  }
   await page.getByLabel('Nome da família').fill('Família E2E')
   await page.getByLabel('Seu nome').fill(GUARDIAN)
   await page.getByLabel('PIN do responsável').fill(PIN)
@@ -92,7 +106,10 @@ test('a new family sets up a day, the child marks it, the guardian rejects with 
   const saldo = (points: number) => page.getByRole('status', { name: `Saldo: ${points} pontos` })
   await expect(saldo(0)).toBeVisible()
 
-  await markThroughCard(page, page.getByRole('button', { name: /^Guardar o boné\./ }))
+  const routine = page.getByRole('region', { name: 'Antes do almoço' })
+  await expect(routine.getByRole('button').first()).toHaveAccessibleName(/^Guardar o boné\. Tarefa 1\./)
+  await expect(routine.getByRole('button').nth(1)).toHaveAccessibleName(/^Lição de casa\. Tarefa 2\./)
+  await markThroughCard(page, routine.getByRole('button', { name: /^Guardar o boné\./ }))
   await expect(saldo(5)).toBeVisible()
 
   const homework = page.getByRole('button', { name: /^Lição de casa\./ })
@@ -172,8 +189,21 @@ test('a dedicated child device pairs, earns and spends points, then loses access
     await expect(balance(0)).toBeVisible()
     await expect(child.getByRole('button', { name: 'Trocar de perfil' })).toHaveCount(0)
     await expect(page.getByText('Vinculado!')).toBeVisible()
+    const homework = child.getByRole('button', { name: /^Lição de casa\./ })
+    await homework.click()
+    await expect(child.getByRole('dialog')).toContainText('Lição de casa')
+    await tab(page, 'Rotinas')
+    await page.getByRole('button', { name: /^Antes do almoço/ }).click()
+    const move = page.getByRole('button', { name: 'Subir Lição de casa' })
+    await move.focus()
+    await move.press('Enter')
+    await expect(page.getByRole('status').filter({ hasText: 'Lição de casa, posição 1.' })).toBeVisible()
+    await expect(move).toBeFocused()
+    await child.getByRole('button', { name: 'Fechar', exact: true }).click()
+    await expect(child.getByRole('dialog')).toHaveCount(0)
+    await expect(homework).toHaveAccessibleName(/^Lição de casa\. Tarefa 1\./)
     await tab(page, 'Início')
-    await markThroughCard(child, child.getByRole('button', { name: /^Lição de casa\./ }))
+    await markThroughCard(child, homework)
     await page.getByRole('button', { name: 'Aprovar', exact: true }).click()
     await expect(balance(10)).toBeVisible()
     await tab(page, 'Recompensas')
@@ -190,6 +220,12 @@ test('a dedicated child device pairs, earns and spends points, then loses access
     await page.getByRole('button', { name: 'Bia' }).click()
     await page.getByRole('button', { name: 'Desvincular' }).click()
     await expect(child.getByRole('button', { name: 'Tenho um código' })).toBeVisible({ timeout: 15000 })
+    await page.getByRole('button', { name: 'Vincular aparelho' }).click()
+    const replacement = await page.getByText(/^[A-HJ-NP-Z2-9]{6}$/).innerText()
+    await child.getByRole('button', { name: 'Tenho um código' }).click()
+    await child.getByLabel('Código de vínculo').fill(replacement)
+    await child.getByRole('button', { name: 'Vincular', exact: true }).click()
+    await expect(balance(0)).toBeVisible()
   } finally {
     await device.close()
   }

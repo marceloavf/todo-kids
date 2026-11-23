@@ -1,3 +1,4 @@
+import { ReadStatus } from '../lib/ReadStatus.tsx'
 import { Archive, ChevronRight, Pencil, Plus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Emoji } from '../lib/Emoji.tsx'
@@ -25,12 +26,14 @@ function useChildNames() {
 /** Rotinas tab: the routines in order, then the upcoming Tarefas avulsas. */
 export function Routines() {
   const { callGuardian } = useGuardian()
-  const { data: routines = [], isPending } = useRoutines()
+  const query = useRoutines()
+  const routines = query.data ?? []
   const { names } = useChildNames()
   const action = useAction()
 
+  const [announcement, announce] = useState('')
   const move = (from: number, to: number) =>
-    action.mutate(() => callGuardian('set_routine_order', { p_ids: moved(routines, from, to).map((r) => r.id) }))
+    action.mutate(() => callGuardian('set_routine_order', { p_ids: moved(routines, from, to).map((r) => r.id) }), { onSuccess: () => announce(`${routines[from].name}, posição ${to + 1}.`) })
 
   return (
     <>
@@ -39,8 +42,11 @@ export function Routines() {
           <Plus aria-hidden className="size-5" /> Nova
         </button>
       </Header>
+      {routines.length > 1 && <p className="text-sm font-semibold text-muted">Use as setas para escolher a ordem das rotinas na tela Hoje.</p>}
       <ErrorText>{action.errorText}</ErrorText>
-      {!isPending && routines.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Nenhuma rotina ainda.</p>}
+      <ReadStatus query={query} subject="as rotinas" />
+      {query.isSuccess && routines.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Nenhuma rotina ainda.</p>}
+      <p role="status" className="sr-only">{announcement}</p>
       <ul className="flex flex-col gap-2">
         {routines.map((routine, i) => (
           <li key={routine.id} className={`${CARD} flex items-center gap-2 p-2`}>
@@ -52,7 +58,7 @@ export function Routines() {
               </span>
               <ChevronRight aria-hidden className="shrink-0 text-muted" />
             </button>
-            <MoveButtons name={routine.name} index={i} count={routines.length} onMove={(to) => move(i, to)} />
+            <MoveButtons busy={action.isPending} name={routine.name} index={i} count={routines.length} onMove={(to) => move(i, to)} />
           </li>
         ))}
       </ul>
@@ -63,7 +69,8 @@ export function Routines() {
 
 function OneOffs() {
   const today = useFamilyToday()
-  const { data: tasks = [], isPending } = useUpcomingOneOffs(today)
+  const query = useUpcomingOneOffs(today)
+  const tasks = query.data ?? []
   const { names } = useChildNames()
   const action = useAction()
 
@@ -73,7 +80,8 @@ function OneOffs() {
         <Plus aria-hidden className="size-5" /> Nova tarefa avulsa
       </button>
       <ErrorText>{action.errorText}</ErrorText>
-      {!isPending && tasks.length === 0 && <p className="font-semibold text-muted">Nenhuma tarefa avulsa de hoje em diante.</p>}
+      <ReadStatus query={query} subject="as tarefas avulsas" />
+      {query.isSuccess && tasks.length === 0 && <p className="font-semibold text-muted">Nenhuma tarefa avulsa de hoje em diante.</p>}
       <ul className="flex flex-col gap-2">
         {tasks.map((task) => (
           <li key={task.id} className={`${CARD} flex items-center gap-2 p-2`}>
@@ -114,17 +122,20 @@ function ArchiveTaskButton({ task, action }: { task: Task; action: ReturnType<ty
 /** One routine: its tasks in order, with reorder, edit and archive. */
 export function RoutineDetail({ id }: { id: string }) {
   const { callGuardian } = useGuardian()
-  const { data: routines, isPending } = useRoutines()
-  const { data: tasks = [] } = useRoutineTasks(id)
+  const routineQuery = useRoutines()
+  const routines = routineQuery.data
+  const taskQuery = useRoutineTasks(id)
+  const tasks = taskQuery.data ?? []
   const { names } = useChildNames()
   const action = useAction()
   const routine = routines?.find((r) => r.id === id)
 
-  if (isPending) return null
+  const [announcement, announce] = useState('')
+  if (!routines) return <ReadStatus query={routineQuery} subject="as rotinas" />
   if (!routine) return <Header title="Rotina não encontrada" back />
 
   const move = (from: number, to: number) =>
-    action.mutate(() => callGuardian('set_task_order', { p_routine_id: id, p_task_ids: moved(tasks, from, to).map((t) => t.id) }))
+    action.mutate(() => callGuardian('set_task_order', { p_routine_id: id, p_task_ids: moved(tasks, from, to).map((t) => t.id) }), { onSuccess: () => announce(`${tasks[from].name}, posição ${to + 1}.`) })
 
   return (
     <>
@@ -137,13 +148,15 @@ export function RoutineDetail({ id }: { id: string }) {
         {weekdaysText(routine.weekdays)} · {names(routine.child_ids)}
       </p>
       <p className="text-sm font-semibold text-muted">
-        Comece com poucas tarefas (3 a 5 para até 6 anos) e coloque uma nova de cada vez.
+        Use as setas para escolher o que vem primeiro. Na tela Hoje, seu filho vê as tarefas nesta ordem.
       </p>
       <button onClick={() => navigate(`responsavel/rotinas/${id}/tarefa/nova`)} className={`${PRIMARY} w-full`}>
         <Plus aria-hidden className="size-5" /> Nova tarefa
       </button>
       <ErrorText>{action.errorText}</ErrorText>
-      {tasks.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Nenhuma tarefa nesta rotina.</p>}
+      <p role="status" className="sr-only">{announcement}</p>
+      <ReadStatus query={taskQuery} subject="as tarefas" />
+      {taskQuery.isSuccess && tasks.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Nenhuma tarefa nesta rotina.</p>}
       <ul className="flex flex-col gap-2">
         {tasks.map((task, i) => (
           <li key={task.id} className={`${CARD} flex items-center gap-1.5 p-2`}>
@@ -156,7 +169,7 @@ export function RoutineDetail({ id }: { id: string }) {
                 </span>
               </span>
             </button>
-            <MoveButtons name={task.name} index={i} count={tasks.length} onMove={(to) => move(i, to)} />
+            <MoveButtons busy={action.isPending} name={task.name} index={i} count={tasks.length} onMove={(to) => move(i, to)} />
             <ArchiveTaskButton task={task} action={action} />
           </li>
         ))}
@@ -179,10 +192,12 @@ export function RoutineDetail({ id }: { id: string }) {
 }
 
 export function RoutineEditor({ id }: { id?: string }) {
-  const { data: routines, isPending } = useRoutines()
-  const { isPending: profilesPending } = useProfiles()
+  const routineQuery = useRoutines()
+  const routines = routineQuery.data
+  const profilesQuery = useProfiles()
   // The form's initial state reads both lists, so it waits for them.
-  if ((id && isPending) || profilesPending) return null
+  if (id && !routines) return <ReadStatus query={routineQuery} subject="as rotinas" />
+  if (!profilesQuery.data) return <ReadStatus query={profilesQuery} subject="os perfis" />
   const routine = id ? routines?.find((r) => r.id === id) : undefined
   if (id && !routine) return <Header title="Rotina não encontrada" back />
   return <RoutineForm routine={routine} />

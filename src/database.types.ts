@@ -289,7 +289,7 @@ isOneToOne: false
 { Args: { "p_id": string,"p_token": string }; Returns: undefined
                            },
 "complete_task":
-{ Args: { "p_child_id": string,"p_task_id": string }; Returns: {
+{ Args: { "p_child_id": string,"p_expected_day": string,"p_task_id": string }; Returns: {
               "child_id": string,
 "created_at": string,
 "day": string,

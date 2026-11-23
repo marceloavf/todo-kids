@@ -1,6 +1,6 @@
 import { Check, Repeat } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotionConfig } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { errorMessage } from '../lib/errors.ts'
 import { Emoji } from '../lib/Emoji.tsx'
 import type { TodayTask } from '../lib/parse.ts'
@@ -39,7 +39,7 @@ const speechText = (task: TodayTask) =>
     .filter(Boolean)
     .join('. ')
 
-/** Hoje: the picture board. Tiles keep their size; with more tasks than fit, the page scrolls. */
+/** Hoje follows the guardian’s routine and task order returned by today_tasks. */
 export function Today({
   tasks,
   openTaskId,
@@ -61,6 +61,7 @@ export function Today({
   onClose: () => void
   onMark: (task: TodayTask) => Promise<void>
 }) {
+  const CardPresence = fx.reduced ? Fragment : AnimatePresence
   const open = tasks.find((t) => t.task_id === openTaskId)
 
   // Every way of closing the card (button, backdrop, Escape, Android back, marking) clears the route.
@@ -85,16 +86,33 @@ export function Today({
     )
   }
 
+  const routines = new Map<string | null, TodayTask[]>()
+  for (const task of tasks) {
+    const items = routines.get(task.routine_id)
+    if (items) items.push(task)
+    else routines.set(task.routine_id, [task])
+  }
+  const next = tasks.find((task) => task.status === 'todo')
+
   return (
     <>
-      <ul className="grid grid-cols-3 gap-2.5 px-3 pt-1 pb-4">
-        {tasks.map((task) => (
-          <li key={task.task_id}>
-            <Tile task={task} guardianName={guardianName} onTap={() => openTile(task)} />
-          </li>
+      <div className="space-y-6 px-3 pt-2 pb-4">
+        {Array.from(routines, ([routineId, items]) => (
+          <section key={routineId ?? 'one-off'} aria-labelledby={`routine-${routineId ?? 'one-off'}`}>
+            <h2 id={`routine-${routineId ?? 'one-off'}`} className="mb-2 break-words text-xl font-black">
+              {items[0].routine_name ?? 'Só hoje'}
+            </h2>
+            <ol className="space-y-2">
+              {items.map((task, index) => (
+                <li key={task.task_id}>
+                  <Tile task={task} number={index + 1} next={task === next} guardianName={guardianName} onTap={() => openTile(task)} />
+                </li>
+              ))}
+            </ol>
+          </section>
         ))}
-      </ul>
-      <AnimatePresence>
+      </div>
+      <CardPresence>
         {open && (
           <TaskCard
             key={open.task_id}
@@ -106,12 +124,12 @@ export function Today({
             onMark={onMark}
           />
         )}
-      </AnimatePresence>
+      </CardPresence>
     </>
   )
 }
 
-export function Tile({ task, guardianName = null, onTap }: { task: TodayTask; guardianName?: string | null; onTap: () => void }) {
+export function Tile({ task, number, next = false, guardianName = null, onTap }: { task: TodayTask; number?: number; next?: boolean; guardianName?: string | null; onTap: () => void }) {
   const reduced = useReducedMotionConfig()
   const badge = task.status !== 'todo' ? task.status : task.rejected_by_name ? 'again' : null
   return (
@@ -122,22 +140,24 @@ export function Tile({ task, guardianName = null, onTap }: { task: TodayTask; gu
       whileTap={reduced ? undefined : { scale: 0.96 }}
       transition={{ type: 'spring', stiffness: 520, damping: 34 }}
       style={{ borderRadius: 22 }}
-      aria-label={`${task.name}. ${task.points > 0 ? `${task.points} pontos. ` : ''}${statusLabel(task, guardianName)}`}
-      className={`relative flex aspect-square w-full flex-col items-center justify-center gap-1 border-[3px] p-1.5 text-center ${TILE_STYLE[task.status]}`}
+      aria-label={`${task.name}. ${number ? `Tarefa ${number}. ` : ''}${next ? 'A seguir. ' : ''}${task.points > 0 ? `${task.points} pontos. ` : ''}${statusLabel(task, guardianName)}`}
+      className={`flex min-h-20 w-full items-center gap-3 border-2 p-3 text-left ${next ? 'border-kid-ink bg-kid-soft' : TILE_STYLE[task.status]}`}
     >
-      {task.points > 0 && (
-        <span className="absolute top-1 left-2 flex items-center gap-0.5 text-[13px] font-black text-kid-ink">
-          <Emoji emoji="⭐" className="size-3.5" />
-          {task.points}
-        </span>
-      )}
-      <motion.span layoutId={`task-icon-${task.task_id}`} className="mt-2.5 block">
+      <motion.span layoutId={`task-icon-${task.task_id}`} className="shrink-0">
         <Emoji emoji={task.icon} className="size-12" />
       </motion.span>
-      <span className="line-clamp-2 text-[13px] leading-tight font-extrabold">{task.name}</span>
-      <AnimatePresence initial={false}>
-        {badge && <Badge key={badge} kind={badge} />}
-      </AnimatePresence>
+      <span className="min-w-0 flex-1">
+        {next && <span className="block text-sm font-black text-kid-ink">A seguir</span>}
+        <span className="block break-words text-lg leading-tight font-black">
+          {number && <span className="text-kid-ink">{number}. </span>}{task.name}
+        </span>
+        {badge && <span className="mt-1 block text-sm font-bold">{statusLabel(task, guardianName)}</span>}
+      </span>
+      {badge ? (
+        <span className="relative size-9 shrink-0"><Badge kind={badge} /></span>
+      ) : task.points > 0 && (
+        <span className="flex shrink-0 items-center gap-1 text-sm font-black text-kid-ink"><Emoji emoji="⭐" className="size-4" />{task.points}</span>
+      )}
     </motion.button>
   )
 }
@@ -151,7 +171,7 @@ function Badge({ kind }: { kind: Exclude<Status, 'todo'> | 'again' }) {
         initial={{ scale: 1.25, rotate: -8, opacity: 0 }}
         animate={{ scale: 1, rotate: -8, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 650, damping: 32 }}
-        className="absolute -top-2 -right-2 grid size-9 place-items-center rounded-full bg-ok text-white ring-4 ring-paper"
+        className="grid size-9 place-items-center rounded-full bg-ok text-white ring-4 ring-paper"
       >
         <Check strokeWidth={4} className="size-5" />
       </motion.span>
@@ -163,7 +183,7 @@ function Badge({ kind }: { kind: Exclude<Status, 'todo'> | 'again' }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.12 }}
-      className={`absolute -top-2 -right-2 grid size-9 place-items-center rounded-full ring-4 ring-paper ${kind === 'pending' ? 'bg-wait-soft' : 'bg-kid-ink text-white'}`}
+      className={`grid size-9 place-items-center rounded-full ring-4 ring-paper ${kind === 'pending' ? 'bg-wait-soft' : 'bg-kid-ink text-white'}`}
     >
       {kind === 'pending' ? <Emoji emoji="⏳" className="size-6" /> : <Repeat strokeWidth={3} className="size-5" />}
     </motion.span>

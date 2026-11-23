@@ -16,7 +16,7 @@ const GuardianApp = lazy(() => import('./guardian/GuardianApp.tsx').then((m) => 
 const PROFILE_ROUTES: Record<string, 'child' | 'guardian'> = { hoje: 'child', recompensas: 'child', responsavel: 'guardian' }
 
 export function App() {
-  const { session, leaveProfile } = useSession()
+  const { session, leaveProfile, retryLookup } = useSession()
   const [pairing, setPairing] = useState(Boolean(initialLinkCode))
   const route = useRoute()
   const online = useOnline()
@@ -47,6 +47,10 @@ export function App() {
           <WifiOff aria-hidden className="size-5" /> Sem internet. Confira a conexão.
         </div>
       )}
+      {session.kind === 'lookupFailed' && <main className="grid min-h-dvh place-content-center gap-3 p-6 text-center">
+        <p role="alert" className="text-xl font-bold">Não conseguimos abrir seu perfil.</p>
+        <button className="min-h-12 underline" onClick={retryLookup}>Tentar de novo</button>
+      </main>}
       {session.kind === 'loading' && <Loading />}
       {(session.kind === 'unpaired' || (session.kind === 'signedOut' && pairing)) && <DeviceEntry onCancel={() => setPairing(false)} />}
       {((session.kind === 'signedOut' && !pairing) || session.kind === 'needsFamily') && <Entry signedIn={session.kind === 'needsFamily'} onPair={() => setPairing(true)} />}

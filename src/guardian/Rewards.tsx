@@ -1,3 +1,4 @@
+import { ReadStatus } from '../lib/ReadStatus.tsx'
 import { Archive, Plus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { EMOJI, Emoji } from '../lib/Emoji.tsx'
@@ -10,7 +11,8 @@ import { CARD, confirmed, EmojiPicker, ErrorText, Field, Header, ICON_BUTTON, IN
 
 export function Rewards() {
   const { callGuardian } = useGuardian()
-  const { data: rewards = [], isPending } = useRewards()
+  const query = useRewards()
+  const rewards = query.data ?? []
   const action = useAction()
 
   return (
@@ -21,7 +23,8 @@ export function Rewards() {
         </button>
       </Header>
       <ErrorText>{action.errorText}</ErrorText>
-      {!isPending && rewards.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Nenhuma recompensa ainda.</p>}
+      <ReadStatus query={query} subject="as recompensas" />
+      {query.isSuccess && rewards.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Nenhuma recompensa ainda.</p>}
       <ul className="flex flex-col gap-2">
         {rewards.map((reward) => (
           <li key={reward.id} className={`${CARD} flex items-center gap-2 p-2`}>
@@ -51,8 +54,9 @@ export function Rewards() {
 }
 
 export function RewardEditor({ id }: { id?: string }) {
-  const { data: rewards, isPending } = useRewards()
-  if (id && isPending) return null
+  const query = useRewards()
+  const rewards = query.data
+  if (id && !rewards) return <ReadStatus query={query} subject="a recompensa" />
   const reward = id ? rewards?.find((r) => r.id === id) : undefined
   if (id && !reward) return <Header title="Recompensa não encontrada" back />
   return <RewardForm reward={reward} />

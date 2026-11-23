@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import { todayIn } from '../../src/guardian/dates.ts'
 import { randomUUID } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database, Json } from '../../src/database.types.ts'
@@ -65,7 +66,7 @@ export async function createFamily(timezone = 'America/Sao_Paulo') {
     client.rpc('create_family', { p_name: 'Família Teste', p_timezone: timezone, p_guardian_name: 'Mamãe', p_pin: PIN }),
   )
   const { token } = await startSession(client, guardian.id, PIN)
-  return { client, guardian, token: token! }
+  return { client, guardian, token: token!, timezone }
 }
 
 export function addChild(f: Family, name = 'Lia') {
@@ -125,7 +126,7 @@ export async function familyWithTask(task: Omit<TaskInput, 'routineId'> = {}, ti
 }
 
 export function complete(f: Family, taskId: string, childId: string) {
-  return f.client.rpc('complete_task', { p_task_id: taskId, p_child_id: childId })
+  return f.client.rpc('complete_task', { p_task_id: taskId, p_child_id: childId, p_expected_day: todayIn(f.timezone) })
 }
 
 export function adjust(f: Family, childId: string, amount: number, reason = 'Ajuste de teste') {

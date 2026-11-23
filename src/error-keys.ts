@@ -2,6 +2,7 @@
 export const ERROR_KEYS = [
   'completion_not_approved',
   'completion_not_pending',
+  'family_day_changed',
   'family_exists',
   'insufficient_balance',
   'invalid_amount',

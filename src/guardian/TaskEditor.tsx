@@ -3,9 +3,11 @@ import { useState, type FormEvent } from 'react'
 import { TaskCardBody, Tile } from '../child/Today.tsx'
 import { EMOJI } from '../lib/Emoji.tsx'
 import { parseSteps, type Step, type TodayTask } from '../lib/parse.ts'
-import { useProfiles } from '../lib/queries.ts'
+import { useCalendarDay } from '../lib/family-day.ts'
+import { ReadStatus } from '../lib/ReadStatus.tsx'
+import { useFamily, useProfiles } from '../lib/queries.ts'
 import { useGuardian } from '../lib/session.tsx'
-import { useAction, useFamilyToday, useTask, type Task } from './data.ts'
+import { useAction, useTask, type Task } from './data.ts'
 import {
   CARD,
   Chips,
@@ -31,12 +33,19 @@ type EditableStep = Step & { key: string }
 
 /** Edits a routine task (`routineId`) or a Tarefa avulsa (no `routineId`). Without `taskId` it creates one. */
 export function TaskEditor({ routineId, taskId }: { routineId?: string; taskId?: string }) {
-  const today = useFamilyToday()
-  const { isPending: profilesPending } = useProfiles()
-  const { data: task, isPending, isError } = useTask(taskId)
-  if (!today || profilesPending || (taskId && isPending)) return null
-  if (taskId && isError) return <Header title="Tarefa não encontrada" back />
-  return <TaskForm routineId={routineId} task={taskId ? task : undefined} today={today} />
+  const family = useFamily()
+  const today = useCalendarDay(family.data?.timezone)
+  const profiles = useProfiles()
+  const query = useTask(taskId)
+  if (!today) return <ReadStatus query={family} subject="o dia da família" />
+  if (!profiles.data) return <ReadStatus query={profiles} subject="os perfis" />
+  if (taskId && !query.data) {
+    if (query.error && 'code' in query.error && query.error.code === 'PGRST116') {
+      return <Header title="Tarefa não encontrada" back />
+    }
+    return <ReadStatus query={query} subject="a tarefa" />
+  }
+  return <TaskForm routineId={routineId} task={taskId ? query.data : undefined} today={today} />
 }
 
 function TaskForm({ routineId, task, today }: { routineId?: string; task?: Task; today: string }) {
@@ -161,7 +170,7 @@ function TaskForm({ routineId, task, today }: { routineId?: string; task?: Task;
 
       <Section title="Como o filho vê">
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-paper p-3" aria-hidden inert>
-          <div className="w-28">
+          <div className="w-full max-w-sm">
             <Tile task={{ ...preview, task_id: 'preview-tile' }} onTap={() => {}} />
           </div>
           <div className="w-full max-w-sm overflow-hidden rounded-[32px] bg-white shadow-md">

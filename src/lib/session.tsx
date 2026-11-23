@@ -5,6 +5,7 @@ import { callRpc, supabase, type Functions } from './supabase.ts'
 
 export type Session =
   | { kind: 'loading' }
+  | { kind: 'lookupFailed' }
   | { kind: 'signedOut' }
   | { kind: 'unpaired' }
   | { kind: 'device'; profileId: string }
@@ -17,6 +18,7 @@ type SessionApi = {
   session: Session
   setSession: (session: Session) => void
   /** Back to the picker. Ends the guardian session on the server, since the token only lives here. */
+  retryLookup: () => void
   leaveProfile: () => void
 }
 
@@ -31,6 +33,7 @@ async function resolveSignedIn(): Promise<Session> {
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session>({ kind: 'loading' })
   const cache = useQueryClient()
+  const [attempt, setAttempt] = useState(0)
   useEffect(() => {
     let generation = 0
     let previousUser: string | undefined
@@ -51,7 +54,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (auth?.user.is_anonymous) {
           setTimeout(async () => {
             const { data: id, error } = await supabase.rpc('device_child_id')
-            if (current !== generation || error) return
+            if (current !== generation) return
+            if (error) {
+              setSession(now => now.kind === 'device' ? now : { kind: 'lookupFailed' })
+              return
+            }
             if (!id) cache.clear()
             setSession(id ? { kind: 'device', profileId: id } : { kind: 'unpaired' })
           })
@@ -60,8 +67,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         // supabase-js deadlocks if another client call is awaited inside this callback.
         setTimeout(() => {
           // Only a fresh start moves on: SIGNED_IN also fires when a tab regains focus, and the Entrada form may have created the family meanwhile.
-          const fromStart = (next: Session) => current === generation && setSession((now) => (now.kind === 'loading' || now.kind === 'signedOut' ? next : now))
-          resolveSignedIn().then(fromStart, () => fromStart({ kind: 'loading' }))
+          const fromStart = (next: Session) => current === generation && setSession((now) => (now.kind === 'loading' || now.kind === 'signedOut' || now.kind === 'lookupFailed' ? next : now))
+          resolveSignedIn().then(fromStart, () => fromStart({ kind: 'lookupFailed' }))
         })
       }
     })
@@ -69,7 +76,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       generation++
       data.subscription.unsubscribe()
     }
-  }, [cache])
+  }, [cache, attempt])
 
   useEffect(() => {
     if (session.kind !== 'device') return
@@ -100,7 +107,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     navigate('', { replace: true })
   }
 
-  return <SessionContext value={{ session, setSession, leaveProfile }}>{children}</SessionContext>
+  const retryLookup = () => {
+    setSession({ kind: 'loading' })
+    setAttempt(value => value + 1)
+  }
+  return <SessionContext value={{ session, setSession, leaveProfile, retryLookup }}>{children}</SessionContext>
 }
 
 export function useSession(): SessionApi {

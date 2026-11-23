@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { errorMessage } from '../lib/errors.ts'
 import { ok, queryKeys, useFamily } from '../lib/queries.ts'
 import { supabase, type Tables } from '../lib/supabase.ts'
-import { addDays, todayIn } from './dates.ts'
+import { useCalendarDay } from '../lib/family-day.ts'
+import { addDays } from './dates.ts'
 
 export type Routine = Tables['routines']['Row']
 export type Task = Tables['tasks']['Row']
@@ -10,7 +11,7 @@ export type Task = Tables['tasks']['Row']
 /** Today in the family's timezone, or null until the family loads. */
 export function useFamilyToday(): string | null {
   const { data: family } = useFamily()
-  return family ? todayIn(family.timezone) : null
+  return useCalendarDay(family?.timezone)
 }
 
 export const useRoutines = () =>
@@ -88,17 +89,18 @@ export const useRecentApproved = (childId: string, today: string | null) =>
   })
 
 export const useStatement = (childId: string) =>
-  useQuery({
+  useInfiniteQuery({
     queryKey: [...queryKeys.statement, childId],
-    queryFn: () =>
-      ok(
-        supabase
-          .from('statement_entries')
-          .select('*')
-          .eq('child_id', childId)
-          .order('created_at', { ascending: false })
-          .limit(100),
-      ),
+    initialPageParam: null as { created_at: string; id: string } | null,
+    queryFn: ({ pageParam }) => {
+      let query = supabase.from('statement_entries').select('*').eq('child_id', childId)
+      if (pageParam) {
+        const { created_at, id } = pageParam
+        query = query.or(`created_at.lt.${created_at},and(created_at.eq.${created_at},id.lt.${id})`)
+      }
+      return ok(query.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(100))
+    },
+    getNextPageParam: (rows) => rows.length === 100 ? rows.at(-1) : undefined,
   })
 
 /** Every profile's name, archived ones included, so the Extrato can still say who decided. */
