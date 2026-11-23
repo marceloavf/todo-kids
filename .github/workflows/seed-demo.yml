@@ -1,0 +1,35 @@
+name: Seed Supabase demo
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-demo-seed
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: supabase-demo
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Seed the demo family
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          SEED_GUARDIAN_EMAIL: ${{ secrets.SEED_GUARDIAN_EMAIL }}
+          SEED_GUARDIAN_PASSWORD: ${{ secrets.SEED_GUARDIAN_PASSWORD }}
+          SEED_GUARDIAN_PIN: ${{ secrets.SEED_GUARDIAN_PIN }}
+        run: node scripts/seed.ts --hosted
