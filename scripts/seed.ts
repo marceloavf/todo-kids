@@ -1,141 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../src/database.types.ts'
+import { ONE_OFFS, REWARDS, ROUTINES, type SeedTask } from './pilot-content.ts'
 
 const EMAIL = 'demo@todokids.local'
 const PASSWORD = 'todokids-demo'
 const PIN = '1234'
-const ALL_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
 
 const CHILDREN = [
   { name: 'Lia', avatar: '🦊', color: '#f2603f', startingBalance: 60 },
   { name: 'Theo', avatar: '🦖', color: '#2f7de1', startingBalance: 35 },
-]
-
-type SeedTask = {
-  name: string
-  icon: string
-  description: string
-  steps: { text: string; emoji: string | null }[]
-  points: number
-  requiresApproval?: boolean
-}
-
-const ROUTINES: { name: string; tasks: SeedTask[] }[] = [
-  {
-    name: 'Manhã',
-    tasks: [
-      {
-        name: 'Arrumar a cama',
-        icon: '🛏️',
-        description: 'Deixe a cama pronta para a noite.',
-        steps: [
-          { text: 'Estique o lençol', emoji: '🛏️' },
-          { text: 'Puxe o cobertor até em cima', emoji: null },
-          { text: 'Ponha o travesseiro no lugar', emoji: '💤' },
-        ],
-        points: 5,
-      },
-      {
-        name: 'Escovar os dentes',
-        icon: '🪥',
-        description: 'Dentes limpos antes de sair.',
-        steps: [
-          { text: 'Ponha pasta na escova', emoji: '🪥' },
-          { text: 'Escove todos os dentes', emoji: '🦷' },
-          { text: 'Enxágue a boca', emoji: '🚰' },
-        ],
-        points: 5,
-      },
-      {
-        name: 'Vestir a roupa',
-        icon: '👕',
-        description: 'Troque o pijama pela roupa do dia.',
-        steps: [
-          { text: 'Tire o pijama', emoji: null },
-          { text: 'Vista a roupa separada', emoji: '👕' },
-          { text: 'Guarde o pijama', emoji: '🧺' },
-        ],
-        points: 5,
-      },
-      {
-        name: 'Tomar café da manhã',
-        icon: '🥣',
-        description: 'Coma à mesa e leve a louça para a pia.',
-        steps: [
-          { text: 'Sente à mesa', emoji: '🪑' },
-          { text: 'Leve o prato para a pia', emoji: '🍽️' },
-        ],
-        points: 10,
-      },
-    ],
-  },
-  {
-    name: 'Depois da escola',
-    tasks: [
-      {
-        name: 'Guardar a mochila',
-        icon: '🎒',
-        description: 'A mochila fica no lugar dela.',
-        steps: [
-          { text: 'Tire a lancheira', emoji: '🍱' },
-          { text: 'Pendure a mochila', emoji: '🎒' },
-        ],
-        points: 5,
-      },
-      {
-        name: 'Fazer a lição',
-        icon: '📚',
-        description: 'Faça a lição de casa e mostre para um adulto.',
-        steps: [
-          { text: 'Abra a agenda', emoji: '📒' },
-          { text: 'Faça os exercícios', emoji: '✏️' },
-          { text: 'Mostre para um adulto', emoji: '👀' },
-        ],
-        points: 20,
-        requiresApproval: true,
-      },
-      {
-        name: 'Guardar os brinquedos',
-        icon: '🧸',
-        description: 'Cada brinquedo volta para a caixa.',
-        steps: [
-          { text: 'Junte os brinquedos do chão', emoji: '🧸' },
-          { text: 'Ponha tudo na caixa', emoji: '📦' },
-        ],
-        points: 10,
-        requiresApproval: true,
-      },
-      {
-        name: 'Dar comida ao cachorro',
-        icon: '🐶',
-        description: 'O pote do cachorro fica cheio.',
-        steps: [
-          { text: 'Pegue a ração', emoji: '🥫' },
-          { text: 'Encha o pote', emoji: '🥣' },
-          { text: 'Troque a água', emoji: '💧' },
-        ],
-        points: 10,
-      },
-    ],
-  },
-]
-
-const ONE_OFF: SeedTask = {
-  name: 'Levar o lixo para fora',
-  icon: '🗑️',
-  description: 'Hoje passa o caminhão do lixo.',
-  steps: [
-    { text: 'Feche o saco', emoji: '🗑️' },
-    { text: 'Leve até a lixeira da rua', emoji: '🚛' },
-  ],
-  points: 15,
-}
-
-const REWARDS = [
-  { name: 'Sorvete', icon: '🍦', cost: 50 },
-  { name: '30 minutos de videogame', icon: '🎮', cost: 80 },
-  { name: 'Cinema em casa', icon: '🎬', cost: 100 },
-  { name: 'Passeio no parque', icon: '🛝', cost: 150 },
 ]
 
 const url = process.env.VITE_SUPABASE_URL!
@@ -197,10 +70,11 @@ const tasks = await ok(client.from('tasks').select('*'))
 
 function saveTask(task: SeedTask, target: { p_routine_id: string } | { p_one_off_date: string; p_child_ids: string[] }) {
   const routineId = 'p_routine_id' in target ? target.p_routine_id : null
+  const date = 'p_one_off_date' in target ? target.p_one_off_date : null
   return ok(
     client.rpc('save_task', {
       p_token: token,
-      p_id: tasks.find((t) => t.routine_id === routineId && t.name === task.name)?.id,
+      p_id: tasks.find((t) => t.routine_id === routineId && t.one_off_date === date && t.name === task.name)?.id,
       p_name: task.name,
       p_icon: task.icon,
       p_description: task.description,
@@ -218,7 +92,7 @@ for (const routine of ROUTINES) {
       p_token: token,
       p_id: routines.find((r) => r.name === routine.name)?.id,
       p_name: routine.name,
-      p_weekdays: ALL_WEEKDAYS,
+      p_weekdays: routine.weekdays,
       p_child_ids: childIds,
     }),
   )
@@ -227,7 +101,11 @@ for (const routine of ROUTINES) {
 
 // The server owns "today", so the one-off date comes from it and not from this machine's clock.
 const today = (await ok(client.rpc('today_tasks')))[0]!.day
-await saveTask(ONE_OFF, { p_one_off_date: today, p_child_ids: childIds })
+for (const { daysFromToday, task } of ONE_OFFS) {
+  const date = new Date(today + 'T00:00:00Z')
+  date.setUTCDate(date.getUTCDate() + daysFromToday)
+  await saveTask(task, { p_one_off_date: date.toISOString().slice(0, 10), p_child_ids: childIds })
+}
 
 const rewards = await ok(client.from('rewards').select('*'))
 for (const reward of REWARDS) {
