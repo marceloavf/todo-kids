@@ -2,6 +2,12 @@
 
 Reviewed commit `e89cd0c` on 23 November 2026. The release target is a provisioned family using a shared tablet and a paired child phone. The first release decision is whether both devices can present the right day, recover from a failed read, and agree about points. Keep the existing React and Supabase architecture. The database already gives the project a single place to enforce family dates, approvals, and balances.
 
+## Implementation and release evidence
+
+The pilot branch now submits the family day from the open task, rejects stale submissions before the point transaction, and refreshes the board at the date boundary and on resume. Guardians and children can retry failed reads. The statement loads older pages in timestamp and ID order. Routine moves announce their saved position. Reward requests account for other pending requests, and the active modal owns keyboard focus. The closed-pilot workflow exercises the production build on a disposable Supabase stack. The recommendations below retain the baseline reasoning and acceptance scenarios.
+
+The first implementation passed the database suite, both development browser journeys, and the closed-pilot browser rehearsal, including re-pairing. Further regression coverage exercises startup retry, family midnight and paginated history. The release checklist covers the remaining hosted and participant evidence. [Implementation run](https://github.com/marceloavf/todo-kids/actions/runs/45115878884) · [Release and recovery guide](family-pilot.md)
+
 ## What has been verified
 
 The exact revision passed lint, type checks, database tests, and both end-to-end scenarios in CI. Those scenarios exercise a guardian rejecting and approving work and a paired child earning and spending points before revocation. The browser configuration uses system Chrome, touch emulation, and reduced motion. It gives us evidence for those flows under those conditions. The pilot build flag and the hosted Auth hook are separate deployment settings. [CI run](https://github.com/marceloavf/todo-kids/actions/runs/45099453260) · [Browser scenarios](../e2e/main-flow.e2e.ts) · [Browser configuration](../playwright.config.ts)

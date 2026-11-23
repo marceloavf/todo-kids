@@ -64,7 +64,7 @@ export function Picker() {
           {guardians.map((guardian, i) => (
             <motion.li
               key={guardian.id}
-              initial={{ opacity: 0, y: 16 }}
+              initial={reduced ? false : { opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 + (children.length + i) * 0.05 }}
             >

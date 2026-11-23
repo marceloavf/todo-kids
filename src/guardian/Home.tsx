@@ -13,12 +13,14 @@ import { Avatar, CARD, confirmed, ErrorText, Field, INPUT, PRIMARY, Section, SEC
 export function Home() {
   const { callGuardian } = useGuardian()
   const today = useFamilyToday()
-  const { data: profiles = [] } = useProfiles()
+  const profilesQuery = useProfiles()
+  const profiles = profilesQuery.data ?? []
   const completionQuery = usePendingCompletions()
   const completions = completionQuery.data ?? []
   const redemptionQuery = usePendingRedemptionsWithReward()
   const redemptions = redemptionQuery.data ?? []
-  const { data: tasks = [] } = useTodayTasks()
+  const tasksQuery = useTodayTasks()
+  const tasks = tasksQuery.data ?? []
   const action = useAction()
   // The pending completion whose "do it again" form is open, and its optional hint.
   const [rejecting, setRejecting] = useState<string | null>(null)
@@ -66,7 +68,7 @@ export function Home() {
                   <div className="min-w-0 flex-1">
                     <p className="font-black">{completion.task.name}</p>
                     <p className="text-sm font-bold text-muted">
-                      {who?.name ?? 'Filho arquivado'} · {completion.points} pontos
+                      {who?.name ?? (profilesQuery.isSuccess ? 'Filho arquivado' : 'Filho')} · {completion.points} pontos
                     </p>
                   </div>
                   {label && label !== 'hoje' && (
@@ -131,11 +133,11 @@ export function Home() {
                   <div className="min-w-0 flex-1">
                     <p className="font-black">Resgate: {redemption.reward.name}</p>
                     <p className="text-sm font-bold text-muted">
-                      {who?.name ?? 'Filho arquivado'} · custa {redemption.cost} pontos
+                      {who?.name ?? (profilesQuery.isSuccess ? 'Filho arquivado' : 'Filho')} · custa {redemption.cost} pontos
                     </p>
                   </div>
                 </div>
-                {!covered && (
+                {profilesQuery.isSuccess && !covered && (
                   <p className="rounded-xl bg-wait-soft px-3 py-2 text-sm font-bold text-wait">
                     O saldo de {who?.name ?? 'filho'} ({who?.balance ?? 0}) não cobre mais o custo. Só dá para recusar.
                   </p>
@@ -164,9 +166,11 @@ export function Home() {
       </Section>
 
       <Section title="Hoje">
-        {children.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Cadastre um filho em Família.</p>}
+        <ReadStatus query={profilesQuery} subject="os perfis" />
+        <ReadStatus query={tasksQuery} subject="as tarefas" />
+        {profilesQuery.isSuccess && children.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Cadastre um filho em Família.</p>}
         <ul className="flex flex-col gap-2">
-          {children.map((c) => (
+          {tasksQuery.data && children.map((c) => (
             <ChildDay key={c.id} child={c} tasks={tasks.filter((t) => t.child_id === c.id)} />
           ))}
         </ul>

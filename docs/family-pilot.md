@@ -24,3 +24,15 @@ On the guardian's device, sign in and enter the guardian profile with its PIN. C
 Use fictional profiles first. Complete a task on the child's device, approve it on the guardian's, and check the points on both. Request and confirm a reward, then check the statement and the sibling's balance. Test reconnecting after a network interruption and unlinking one device while another remains paired.
 
 During the first family session, watch whether the child recognizes the pictured action, understands that approval is pending, and notices when points arrive. Record the device and the exact step if something is confusing. Desktop touch emulation does not cover camera scanning, Home Screen storage, speech voices or haptics on the family's phones.
+
+## Release the dated completion contract
+
+Coordinate the client build with migration `20261123010000_completion_day` during a quiet period. Apply the forward migration, publish the matching build, and reopen any already-open shared tablet or child app. An older client calls the retired two-argument function and its submission fails safely. After refresh, reopen the current task and confirm once. Check the statement before repeating an action whose response was interrupted. Use this client and schema as a pair when rehearsing rollback.
+
+The release workflow first runs the development signup scenarios. It then provisions a fictional guardian on the runner, restarts the local Auth service with the pilot hook enabled, and exercises the closed production build. This verifies the repository configuration and does not inspect the hosted project's settings.
+
+## Restore access during the pilot
+
+The pilot operator who provisioned the account handles guardian account recovery through Supabase Auth. Keep a private contact route available to the participating guardian. For lost child-device storage, open the guardian profile on a trusted device, revoke the old link in **Família**, and issue a new code for the same child. The new link uses the existing routines, statement and balance.
+
+For the release record, capture the build revision, latest applied migration, device and OS, family timezone, the task tested, and the expected and observed outcomes. Use fictional names for the rehearsal. Record the results of camera pairing, Home Screen reopening, VoiceOver or TalkBack navigation, and a disconnected device returning to the correct family day. Have the guardian reorder two tasks and ask the child which comes next. Record actual observations before changing the board again.

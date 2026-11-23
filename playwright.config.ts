@@ -11,7 +11,7 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${PORT}/`,
     // The system Chrome; no Playwright browser download.
-    channel: 'chrome',
+    channel: process.env.PLAYWRIGHT_CHANNEL ?? 'chrome',
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 3,
     isMobile: true,

@@ -222,10 +222,10 @@ export function EmojiPicker({
 export function MoveButtons({ name, index, count, onMove, busy = false }: { busy?: boolean; name: string; index: number; count: number; onMove: (to: number) => void }) {
   return (
     <>
-      <button type="button" aria-label={`Subir ${name}`} disabled={busy || index === 0} onClick={() => onMove(index - 1)} className={ICON_BUTTON}>
+      <button type="button" aria-label={`Subir ${name}`} aria-disabled={busy || index === 0} onClick={() => !busy && index > 0 && onMove(index - 1)} className={`${ICON_BUTTON} aria-disabled:opacity-40`}>
         <ChevronUp aria-hidden />
       </button>
-      <button type="button" aria-label={`Descer ${name}`} disabled={busy || index === count - 1} onClick={() => onMove(index + 1)} className={ICON_BUTTON}>
+      <button type="button" aria-label={`Descer ${name}`} aria-disabled={busy || index === count - 1} onClick={() => !busy && index < count - 1 && onMove(index + 1)} className={`${ICON_BUTTON} aria-disabled:opacity-40`}>
         <ChevronDown aria-hidden />
       </button>
     </>

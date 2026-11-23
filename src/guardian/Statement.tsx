@@ -163,7 +163,8 @@ function AdjustmentForm({ child }: { child: Profile }) {
 function Reversals({ child }: { child: Profile }) {
   const { callGuardian } = useGuardian()
   const today = useFamilyToday()
-  const { data: completions = [] } = useRecentApproved(child.id, today)
+  const approvals = useRecentApproved(child.id, today)
+  const completions = approvals.data ?? []
   const action = useAction()
 
   return (
@@ -172,7 +173,8 @@ function Reversals({ child }: { child: Profile }) {
       <div className="flex flex-col gap-2 px-4 pb-4">
         <p className="text-sm font-semibold text-muted">Conclusões aprovadas nos últimos {RECENT_APPROVED_DAYS} dias.</p>
         <ErrorText>{action.errorText}</ErrorText>
-        {completions.length === 0 && <p className="font-semibold text-muted">Nenhuma.</p>}
+        <ReadStatus query={approvals} subject="as conclusões" />
+        {approvals.isSuccess && completions.length === 0 && <p className="font-semibold text-muted">Nenhuma.</p>}
         <ul className="flex flex-col gap-2">
           {completions.map((completion) => (
             <li key={completion.id} className="flex items-center gap-3">

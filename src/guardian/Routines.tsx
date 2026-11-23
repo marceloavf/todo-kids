@@ -1,3 +1,4 @@
+import { ReadStatus } from '../lib/ReadStatus.tsx'
 import { Archive, ChevronRight, Pencil, Plus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Emoji } from '../lib/Emoji.tsx'
@@ -25,7 +26,8 @@ function useChildNames() {
 /** Rotinas tab: the routines in order, then the upcoming Tarefas avulsas. */
 export function Routines() {
   const { callGuardian } = useGuardian()
-  const { data: routines = [], isPending } = useRoutines()
+  const query = useRoutines()
+  const routines = query.data ?? []
   const { names } = useChildNames()
   const action = useAction()
 
@@ -42,7 +44,8 @@ export function Routines() {
       </Header>
       {routines.length > 1 && <p className="text-sm font-semibold text-muted">Use as setas para escolher a ordem das rotinas na tela Hoje.</p>}
       <ErrorText>{action.errorText}</ErrorText>
-      {!isPending && routines.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Nenhuma rotina ainda.</p>}
+      <ReadStatus query={query} subject="as rotinas" />
+      {query.isSuccess && routines.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Nenhuma rotina ainda.</p>}
       <p role="status" className="sr-only">{announcement}</p>
       <ul className="flex flex-col gap-2">
         {routines.map((routine, i) => (
@@ -66,7 +69,8 @@ export function Routines() {
 
 function OneOffs() {
   const today = useFamilyToday()
-  const { data: tasks = [], isPending } = useUpcomingOneOffs(today)
+  const query = useUpcomingOneOffs(today)
+  const tasks = query.data ?? []
   const { names } = useChildNames()
   const action = useAction()
 
@@ -76,7 +80,8 @@ function OneOffs() {
         <Plus aria-hidden className="size-5" /> Nova tarefa avulsa
       </button>
       <ErrorText>{action.errorText}</ErrorText>
-      {!isPending && tasks.length === 0 && <p className="font-semibold text-muted">Nenhuma tarefa avulsa de hoje em diante.</p>}
+      <ReadStatus query={query} subject="as tarefas avulsas" />
+      {query.isSuccess && tasks.length === 0 && <p className="font-semibold text-muted">Nenhuma tarefa avulsa de hoje em diante.</p>}
       <ul className="flex flex-col gap-2">
         {tasks.map((task) => (
           <li key={task.id} className={`${CARD} flex items-center gap-2 p-2`}>
@@ -117,14 +122,16 @@ function ArchiveTaskButton({ task, action }: { task: Task; action: ReturnType<ty
 /** One routine: its tasks in order, with reorder, edit and archive. */
 export function RoutineDetail({ id }: { id: string }) {
   const { callGuardian } = useGuardian()
-  const { data: routines, isPending } = useRoutines()
-  const { data: tasks = [] } = useRoutineTasks(id)
+  const routineQuery = useRoutines()
+  const routines = routineQuery.data
+  const taskQuery = useRoutineTasks(id)
+  const tasks = taskQuery.data ?? []
   const { names } = useChildNames()
   const action = useAction()
   const routine = routines?.find((r) => r.id === id)
 
   const [announcement, announce] = useState('')
-  if (isPending) return null
+  if (!routines) return <ReadStatus query={routineQuery} subject="as rotinas" />
   if (!routine) return <Header title="Rotina não encontrada" back />
 
   const move = (from: number, to: number) =>
@@ -148,7 +155,8 @@ export function RoutineDetail({ id }: { id: string }) {
       </button>
       <ErrorText>{action.errorText}</ErrorText>
       <p role="status" className="sr-only">{announcement}</p>
-      {tasks.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Nenhuma tarefa nesta rotina.</p>}
+      <ReadStatus query={taskQuery} subject="as tarefas" />
+      {taskQuery.isSuccess && tasks.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Nenhuma tarefa nesta rotina.</p>}
       <ul className="flex flex-col gap-2">
         {tasks.map((task, i) => (
           <li key={task.id} className={`${CARD} flex items-center gap-1.5 p-2`}>
@@ -184,10 +192,12 @@ export function RoutineDetail({ id }: { id: string }) {
 }
 
 export function RoutineEditor({ id }: { id?: string }) {
-  const { data: routines, isPending } = useRoutines()
-  const { isPending: profilesPending } = useProfiles()
+  const routineQuery = useRoutines()
+  const routines = routineQuery.data
+  const profilesQuery = useProfiles()
   // The form's initial state reads both lists, so it waits for them.
-  if ((id && isPending) || profilesPending) return null
+  if (id && !routines) return <ReadStatus query={routineQuery} subject="as rotinas" />
+  if (!profilesQuery.data) return <ReadStatus query={profilesQuery} subject="os perfis" />
   const routine = id ? routines?.find((r) => r.id === id) : undefined
   if (id && !routine) return <Header title="Rotina não encontrada" back />
   return <RoutineForm routine={routine} />

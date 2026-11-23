@@ -3,6 +3,7 @@ import { Users } from 'lucide-react'
 import { AnimatePresence, MotionConfig, animate, motion, useAnimate, useMotionValue, useTransform } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { errorKeyOf } from '../lib/errors.ts'
 import { useCalendarDay } from '../lib/family-day.ts'
 import { ReadStatus } from '../lib/ReadStatus.tsx'
 import { Emoji } from '../lib/Emoji.tsx'
@@ -111,7 +112,7 @@ function ChildArea({ profile }: { profile: Profile }) {
   const { data: family } = useFamily()
   const calendarDay = useCalendarDay(family?.timezone)
   const [dayNotice, setDayNotice] = useState('')
-  const openDay = useRef<string | null>(null)
+  const openDay = useRef<{ displayed: string; calendar: string | null } | null>(null)
   const dayChanged = useCallback(() => {
     openDay.current = null
     navigate('hoje', { replace: true })
@@ -127,7 +128,7 @@ function ChildArea({ profile }: { profile: Profile }) {
   const tasks = (allTasks ?? []).filter((t) => t.child_id === profile.id)
   useEffect(() => {
     if (!route[1] || route[0] !== 'hoje') openDay.current = null
-    if (openDay.current && calendarDay && openDay.current !== calendarDay) dayChanged()
+    if (openDay.current?.calendar && calendarDay && openDay.current.calendar !== calendarDay) dayChanged()
   }, [calendarDay, route, dayChanged])
   const pending = redemptions.find((r) => r.child_id === profile.id)
   const doneCount = tasks.filter((t) => t.status === 'done').length
@@ -247,10 +248,10 @@ function ChildArea({ profile }: { profile: Profile }) {
     if (flies) setHeldBalance(profile.balance)
     let completion
     try {
-      completion = await callRpc('complete_task', { p_task_id: task.task_id, p_child_id: profile.id, p_expected_day: openDay.current ?? task.day })
+      completion = await callRpc('complete_task', { p_task_id: task.task_id, p_child_id: profile.id, p_expected_day: openDay.current?.displayed ?? task.day })
     } catch (error) {
       setHeldBalance(null)
-      if (error && typeof error === 'object' && 'message' in error && error.message === 'family_day_changed') dayChanged()
+      if (errorKeyOf(error) === 'family_day_changed') dayChanged()
       throw error
     }
     const status = completion.status === 'approved' ? 'done' : 'pending'
@@ -371,7 +372,7 @@ function ChildArea({ profile }: { profile: Profile }) {
                 online={online}
                 tapsLocked={cooling || dayPhrase !== null}
                 onOpen={(task) => {
-                  openDay.current = task.day
+                  openDay.current = { displayed: task.day, calendar: calendarDay }
                   setDayNotice('')
                   navigate(`hoje/${task.task_id}`)
                 }}
@@ -384,15 +385,15 @@ function ChildArea({ profile }: { profile: Profile }) {
               <ReadStatus query={rewardsQuery} subject="as recompensas" />
               <ReadStatus query={pendingQuery} subject="os pedidos" />
               {rewardsQuery.data && pendingQuery.data && <Rewards
-              rewards={rewardsQuery.data}
-              pending={pending}
-              balance={profile.balance}
-              openRewardId={route[1]}
-              fx={fx}
-              online={online}
-              onOpen={(reward) => navigate(`recompensas/${reward.id}`)}
-              onClose={closeCard}
-              onRequest={requestReward}
+                rewards={rewardsQuery.data}
+                pending={pending}
+                balance={profile.balance}
+                openRewardId={route[1]}
+                fx={fx}
+                online={online}
+                onOpen={(reward) => navigate(`recompensas/${reward.id}`)}
+                onClose={closeCard}
+                onRequest={requestReward}
               />}
             </>
           )}

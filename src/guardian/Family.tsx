@@ -1,3 +1,4 @@
+import { ReadStatus } from '../lib/ReadStatus.tsx'
 import { ChildDevices } from './ChildDevices.tsx'
 import { Archive, ChevronRight, Plus } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
@@ -17,8 +18,10 @@ const COLOR_NAMES: Record<string, string> = {
 const COLORS = Object.keys(COLOR_NAMES)
 
 export function Family() {
-  const { data: family } = useFamily()
-  const { data: profiles = [] } = useProfiles()
+  const familyQuery = useFamily()
+  const family = familyQuery.data
+  const profilesQuery = useProfiles()
+  const profiles = profilesQuery.data ?? []
   const { leave } = useGuardian()
   const children = profiles.filter((p) => p.kind === 'child')
   const guardians = profiles.filter((p) => p.kind === 'guardian')
@@ -26,6 +29,8 @@ export function Family() {
   return (
     <>
       <Header title="Família" />
+      <ReadStatus query={familyQuery} subject="a família" />
+      <ReadStatus query={profilesQuery} subject="os perfis" />
       {family && <FamilyForm key={`${family.name}|${family.timezone}`} family={family} />}
       <ProfileList title="Filhos" profiles={children} newPath="novo-filho" newLabel="Novo filho" />
       <ProfileList title="Responsáveis" profiles={guardians} newPath="novo-responsavel" newLabel="Novo responsável" />
@@ -103,8 +108,9 @@ function ProfileList({ title, profiles, newPath, newLabel }: { title: string; pr
 }
 
 export function ProfileEditor({ id, kind }: { id?: string; kind?: Profile['kind'] }) {
-  const { data: profiles, isPending } = useProfiles()
-  if (id && isPending) return null
+  const query = useProfiles()
+  const profiles = query.data
+  if (id && !profiles) return <ReadStatus query={query} subject="o perfil" />
   const profile = id ? profiles?.find((p) => p.id === id) : undefined
   if (id && !profile) return <Header title="Perfil não encontrado" back />
   return <ProfileForm profile={profile} kind={profile?.kind ?? kind ?? 'child'} />
