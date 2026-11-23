@@ -8,7 +8,7 @@ test('a paired phone recovers its identity and tasks, then closes yesterday’s 
   const now = new Date('2026-11-24T02:58:00Z')
   await page.clock.install({ time: now })
   const authKey = 'sb-' + new URL(process.env.VITE_SUPABASE_URL!).hostname.split('.')[0] + '-auth-token'
-  const exp = Math.round(now.getTime() / 1000) + 86400
+  const exp = Math.round(now.getTime() / 1000) + 7 * 86400
   const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url')
   const user = { id: 'fictional-device', aud: 'authenticated', role: 'authenticated', is_anonymous: true }
   const jwt = [encode({ alg: 'HS256', typ: 'JWT' }), encode({ ...user, sub: user.id, exp }), 'ZmFrZQ'].join('.')
@@ -27,7 +27,7 @@ test('a paired phone recovers its identity and tasks, then closes yesterday’s 
     }
     let data: unknown = []
     if (name === 'device_child_id') data = 'child'
-    if (name === 'profiles') data = [{ id: 'child', kind: 'child', name: 'Bia', balance: 0, avatar: '🐱', color: '#ffffff', reduced_motion: true }]
+    if (name === 'profiles') data = [{ id: 'child', kind: 'child', name: 'Bia', balance: 100, avatar: '🐱', color: '#ffffff', reduced_motion: true }]
     if (name === 'families') data = { timezone: 'America/Sao_Paulo' }
     if (name === 'complete_task') submissions++
     if (name === 'today_tasks' && !empty) data = [{
@@ -54,6 +54,8 @@ test('a paired phone recovers its identity and tasks, then closes yesterday’s 
   await task.press('Enter')
   await page.clock.runFor(600)
   await expect(page.getByRole('dialog')).toContainText('Guarde o caderno')
+  await page.addStyleTag({ content: 'html { font-size: 200% }' })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.keyboard.press('Escape')
   await page.clock.runFor(1000)
   await expect(task).toBeFocused()

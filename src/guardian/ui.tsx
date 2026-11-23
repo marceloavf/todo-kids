@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronLeft, ChevronUp, Minus, Plus } from 'lucide-react'
-import { cloneElement, isValidElement, useId, useState, type ReactNode } from 'react'
+import { cloneElement, isValidElement, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Emoji } from '../lib/Emoji.tsx'
 
 export const INPUT =
@@ -220,12 +220,22 @@ export function EmojiPicker({
 
 /** Up and down buttons for one item of an ordered list. */
 export function MoveButtons({ name, index, count, onMove, busy = false }: { busy?: boolean; name: string; index: number; count: number; onMove: (to: number) => void }) {
+  const pressed = useRef<HTMLButtonElement | null>(null)
+  useLayoutEffect(() => {
+    if (document.activeElement === document.body) pressed.current?.focus({ preventScroll: true })
+    pressed.current = null
+  }, [index])
+  function move(button: HTMLButtonElement, to: number) {
+    if (busy || to < 0 || to >= count) return
+    pressed.current = button
+    onMove(to)
+  }
   return (
     <>
-      <button type="button" aria-label={`Subir ${name}`} aria-disabled={busy || index === 0} onClick={() => !busy && index > 0 && onMove(index - 1)} className={`${ICON_BUTTON} aria-disabled:opacity-40`}>
+      <button type="button" aria-label={`Subir ${name}`} aria-disabled={busy || index === 0} onClick={event => move(event.currentTarget, index - 1)} className={`${ICON_BUTTON} aria-disabled:opacity-40`}>
         <ChevronUp aria-hidden />
       </button>
-      <button type="button" aria-label={`Descer ${name}`} aria-disabled={busy || index === count - 1} onClick={() => !busy && index < count - 1 && onMove(index + 1)} className={`${ICON_BUTTON} aria-disabled:opacity-40`}>
+      <button type="button" aria-label={`Descer ${name}`} aria-disabled={busy || index === count - 1} onClick={event => move(event.currentTarget, index + 1)} className={`${ICON_BUTTON} aria-disabled:opacity-40`}>
         <ChevronDown aria-hidden />
       </button>
     </>

@@ -314,7 +314,7 @@ function ChildArea({ profile }: { profile: Profile }) {
     <MotionConfig reducedMotion={fx.reduced ? 'always' : 'never'}>
       <div className="flex h-dvh flex-col">
         <header className="pt-safe shrink-0 px-4 pb-3">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <motion.span
               layoutId={`avatar-${profile.id}`}
               className="grid size-14 shrink-0 place-items-center rounded-full"
@@ -322,7 +322,7 @@ function ChildArea({ profile }: { profile: Profile }) {
             >
               <Emoji emoji={profile.avatar} className="size-9" />
             </motion.span>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-[5ch] flex-1">
               <h1 className="truncate text-2xl leading-tight font-black">{profile.name}</h1>
               <p className="text-sm font-bold text-muted">{weekday ? `Hoje, ${weekday}` : 'Hoje'}</p>
             </div>
