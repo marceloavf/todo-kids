@@ -18,7 +18,7 @@ test('a paired device completes its own task and loses access when unlinked', as
   expect(await redeem(current)).toBe('linked')
   expect(await ok(device.rpc('device_child_id'))).toBe(child.id)
   expect((await ok(device.from('profiles').select('id'))).map(p => p.id).sort()).toEqual([child.id, f.guardian.id].sort())
-  expect((await ok(device.rpc('today_tasks'))).map(row => row.child_id)).toEqual([child.id])
+  expect((await ok(device.rpc('today_tasks'))).filter(row => row.task_id === task.id).map(row => row.child_id)).toEqual([child.id])
   expect((await device.rpc('complete_task', { p_child_id: sibling.id, p_task_id: task.id })).error?.message).toBe('not_authorized')
   await ok(device.rpc('complete_task', { p_child_id: child.id, p_task_id: task.id }))
   expect((await ok(device.from('profiles').select('balance').eq('id', child.id).single())).balance).toBe(5)

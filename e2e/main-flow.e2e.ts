@@ -58,16 +58,16 @@ async function setupFamily(page: Page) {
 
   await tab(page, 'Rotinas')
   await page.getByRole('button', { name: 'Nova', exact: true }).click()
-  await nameField(page).fill('Manhã')
+  await nameField(page).fill('Antes do almoço')
   const weekdays = page.getByRole('group', { name: 'Dias da semana' }).getByRole('button')
   await expect(weekdays).toHaveCount(7)
   for (const day of await weekdays.all()) await expect(day).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByRole('button', { name: 'Bia' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Salvar rotina' }).click()
-  await page.getByRole('button', { name: /^Manhã/ }).click()
+  await page.getByRole('button', { name: /^Antes do almoço/ }).click()
 
   await page.getByRole('button', { name: 'Nova tarefa' }).click()
-  await nameField(page).fill('Arrumar a cama')
+  await nameField(page).fill('Guardar o boné')
   await page.getByRole('textbox', { name: 'Pontos', exact: true }).fill('5')
   await page.getByRole('button', { name: 'Salvar tarefa' }).click()
   await page.getByRole('button', { name: 'Nova tarefa' }).click()
@@ -79,10 +79,10 @@ async function setupFamily(page: Page) {
 
   await tab(page, 'Recompensas')
   await page.getByRole('button', { name: 'Nova', exact: true }).click()
-  await nameField(page).fill('Sorvete')
+  await nameField(page).fill('Escolher o lanche')
   await page.getByRole('textbox', { name: 'Custo em pontos', exact: true }).fill('20')
   await page.getByRole('button', { name: 'Salvar recompensa' }).click()
-  await expect(page.getByRole('button', { name: /^Sorvete/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Escolher o lanche/ })).toBeVisible()
 }
 
 test('a new family sets up a day, the child marks it, the guardian rejects with a hint, approves and adjusts', async ({ page }) => {
@@ -92,7 +92,7 @@ test('a new family sets up a day, the child marks it, the guardian rejects with 
   const saldo = (points: number) => page.getByRole('status', { name: `Saldo: ${points} pontos` })
   await expect(saldo(0)).toBeVisible()
 
-  await markThroughCard(page, page.getByRole('button', { name: /^Arrumar a cama\./ }))
+  await markThroughCard(page, page.getByRole('button', { name: /^Guardar o boné\./ }))
   await expect(saldo(5)).toBeVisible()
 
   const homework = page.getByRole('button', { name: /^Lição de casa\./ })
@@ -130,7 +130,7 @@ test('a new family sets up a day, the child marks it, the guardian rejects with 
   await tab(page, 'Extrato')
   await expect(saldo(15)).toBeVisible()
   const entries = page.locator('[data-entry]')
-  await expect(entries.filter({ hasText: 'Conclusão: Arrumar a cama' })).toContainText('+5')
+  await expect(entries.filter({ hasText: 'Conclusão: Guardar o boné' })).toContainText('+5')
   await expect(entries.filter({ hasText: 'Conclusão: Lição de casa' })).toContainText(`por ${GUARDIAN}`)
   await expect(entries.filter({ hasText: 'Conclusão: Lição de casa' })).toContainText('+10')
 
@@ -177,11 +177,11 @@ test('a dedicated child device pairs, earns and spends points, then loses access
     await page.getByRole('button', { name: 'Aprovar', exact: true }).click()
     await expect(balance(10)).toBeVisible()
     await tab(page, 'Recompensas')
-    await page.getByRole('button', { name: /^Sorvete/ }).click()
+    await page.getByRole('button', { name: /^Escolher o lanche/ }).click()
     await page.getByRole('textbox', { name: 'Custo em pontos' }).fill('10')
     await page.getByRole('button', { name: 'Salvar recompensa' }).click()
     await child.getByRole('button', { name: 'Recompensas', exact: true }).click()
-    await child.getByRole('button', { name: /^Sorvete.*Custa 10/ }).click()
+    await child.getByRole('button', { name: /^Escolher o lanche.*Custa 10/ }).click()
     await child.getByRole('button', { name: 'Quero!' }).click()
     await tab(page, 'Início')
     await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
