@@ -2,17 +2,34 @@ import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../src/database.types.ts'
 import { ONE_OFFS, REWARDS, ROUTINES, type SeedTask } from './pilot-content.ts'
 
-const EMAIL = 'demo@todokids.local'
-const PASSWORD = 'todokids-demo'
-const PIN = '1234'
-
 const CHILDREN = [
   { name: 'Lia', avatar: '🦊', color: '#f2603f', startingBalance: 60 },
   { name: 'Theo', avatar: '🦖', color: '#2f7de1', startingBalance: 35 },
 ]
 
-const url = process.env.VITE_SUPABASE_URL!
-const client = createClient<Database>(url, process.env.VITE_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
+function required(key: string) {
+  const value = process.env[key]
+  if (!value?.trim()) throw new Error(`Missing ${key}`)
+  return value
+}
+
+const hosted = process.argv.includes('--hosted')
+const url = new URL(required(hosted ? 'SUPABASE_URL' : 'VITE_SUPABASE_URL'))
+const key = required(hosted ? 'SUPABASE_PUBLISHABLE_KEY' : 'VITE_SUPABASE_ANON_KEY')
+if (hosted) {
+  if (url.protocol !== 'https:') throw new Error('SUPABASE_URL must use HTTPS')
+  if (!key.startsWith('sb_publishable_')) throw new Error('Use a Supabase publishable key for hosted seeding')
+} else if (!['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) {
+  throw new Error('npm run seed targets local Supabase. Use the hosted seed workflow for a hosted project.')
+}
+
+const email = hosted ? required('SEED_GUARDIAN_EMAIL') : 'demo@todokids.local'
+const password = hosted ? required('SEED_GUARDIAN_PASSWORD') : 'todokids-demo'
+const pin = hosted ? required('SEED_GUARDIAN_PIN') : '1234'
+if (!/^\d{4}$/.test(pin)) throw new Error('SEED_GUARDIAN_PIN must be four digits')
+
+const auth = { persistSession: false, autoRefreshToken: false }
+const client = createClient<Database>(url.origin, key, { auth })
 
 async function ok<R extends { data: unknown; error: { message: string } | null }>(query: PromiseLike<R>) {
   const { data, error } = await query
@@ -20,13 +37,14 @@ async function ok<R extends { data: unknown; error: { message: string } | null }
   return data as NonNullable<R['data']>
 }
 
-if ((await client.auth.signInWithPassword({ email: EMAIL, password: PASSWORD })).error) {
-  const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
-  const created = await admin.auth.admin.createUser({ email: EMAIL, password: PASSWORD, email_confirm: true })
+let signIn = await client.auth.signInWithPassword({ email, password })
+if (!hosted && signIn.error?.code === 'invalid_credentials') {
+  const admin = createClient(url.origin, required('SUPABASE_SERVICE_ROLE_KEY'), { auth })
+  const created = await admin.auth.admin.createUser({ email, password, email_confirm: true })
   if (created.error) throw created.error
-  const signIn = await client.auth.signInWithPassword({ email: EMAIL, password: PASSWORD })
-  if (signIn.error) throw signIn.error
+  signIn = await client.auth.signInWithPassword({ email, password })
 }
+if (signIn.error) throw new Error(`Seed guardian sign-in failed (${signIn.error.code ?? 'unknown error'})`)
 
 const profiles = await ok(client.from('profiles').select('*'))
 const guardian =
@@ -36,15 +54,15 @@ const guardian =
       p_name: 'Família Demo',
       p_timezone: 'America/Sao_Paulo',
       p_guardian_name: 'Mamãe',
-      p_pin: PIN,
+      p_pin: pin,
     }),
   ))
 
-const session = (await ok(client.rpc('start_guardian_session', { p_profile_id: guardian.id, p_pin: PIN }))) as {
+const session = (await ok(client.rpc('start_guardian_session', { p_profile_id: guardian.id, p_pin: pin }))) as {
   ok: boolean
   token: string
 }
-if (!session.ok) throw new Error(`PIN ${PIN} was refused for the demo guardian`)
+if (!session.ok) throw new Error('The seed guardian PIN was refused')
 const token = session.token
 
 const childIds: string[] = []
@@ -139,7 +157,7 @@ await ok(client.rpc('end_guardian_session', { p_token: token }))
 const count = async (table: 'profiles' | 'routines' | 'tasks' | 'rewards' | 'statement_entries') =>
   (await client.from(table).select('id', { count: 'exact', head: true })).count
 console.log(
-  `Demo family ready: ${EMAIL} / ${PASSWORD}, PIN ${PIN}.`,
+  'Demo family ready.',
   `profiles=${await count('profiles')} routines=${await count('routines')} tasks=${await count('tasks')}`,
   `rewards=${await count('rewards')} statement_entries=${await count('statement_entries')}`,
 )
