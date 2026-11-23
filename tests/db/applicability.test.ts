@@ -52,9 +52,10 @@ test('a one-off task applies on its date to its children, after the routine task
   const tomorrow = await ok(saveTask(f, { oneOffDate: addDays(day, 1), childIds: [child.id] }))
 
   const rows = (await ok(f.client.rpc('today_tasks'))).filter((row) => row.child_id === child.id)
+  const selected = rows.filter((row) => row.task_id === task.id || row.task_id === today.id)
 
-  expect(rows.map((row) => row.task_id)).toEqual([task.id, today.id])
-  expect(rows[1]).toMatchObject({ routine_id: null, routine_name: null, name: 'Levar o lixo' })
+  expect(selected.map((row) => row.task_id)).toEqual([task.id, today.id])
+  expect(selected[1]).toMatchObject({ routine_id: null, routine_name: null, name: 'Levar o lixo' })
   expect(await errorKey(complete(f, tomorrow.id, child.id))).toBe('task_not_available')
   expect(await errorKey(complete(f, today.id, sibling.id))).toBe('task_not_available')
   expect((await ok(complete(f, today.id, child.id))).status).toBe('approved')
@@ -84,7 +85,7 @@ test('archived tasks and routines leave the day and cannot be completed', async 
 
   await ok(f.client.rpc('archive_routine', { p_token: f.token, p_id: routine.id }))
 
-  expect(await ok(f.client.rpc('today_tasks'))).toEqual([])
+  expect(await todayTask(f, other.id, child.id)).toBeUndefined()
   expect(await errorKey(complete(f, other.id, child.id))).toBe('task_not_available')
 })
 
@@ -101,5 +102,6 @@ test('today_tasks follows the order the guardian set', async () => {
 
   const rows = await ok(f.client.rpc('today_tasks'))
 
-  expect(rows.map((row) => row.task_id)).toEqual([first.id, second.id, task.id])
+  expect(rows.filter((row) => row.routine_id === earlier.id || row.routine_id === routine.id).map((row) => row.task_id))
+    .toEqual([first.id, second.id, task.id])
 })

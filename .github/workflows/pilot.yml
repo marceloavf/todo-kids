@@ -2,6 +2,8 @@ name: Family pilot checks
 on:
   push:
     branches: [pilot/child-devices, main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read

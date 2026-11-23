@@ -10,7 +10,7 @@
 
 ## Set up the first routine
 
-On the guardian's device, sign in and enter the guardian profile with its PIN. In **Família** (Family), add a child and check the family time zone. In **Rotinas** (Routines), assign a short routine to that child and select its weekdays. Add one task that awards points immediately and another that requires approval. In **Recompensas** (Rewards), create a reward the child can afford after those tasks.
+On the guardian's device, sign in and enter the guardian profile with its PIN. Check the family time zone before adding the first child in **Família** (Family). The app adds starter routines, tasks, and rewards for the first child. The migration also adds missing starters to existing families with active child profiles. Edit the defaults in **Rotinas** (Routines) and **Recompensas** (Rewards), and assign the routines to additional children as needed.
 
 ## Pair a phone or tablet
 
