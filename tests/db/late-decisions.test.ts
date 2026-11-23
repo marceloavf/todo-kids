@@ -5,8 +5,9 @@ import { balance, complete, type Family, familyWithTask, ok, saveTask, todayTask
 const YESTERDAY_ZONE = 'Pacific/Pago_Pago'
 const TODAY_ZONE = 'Pacific/Kiritimati'
 
-function moveTo(f: Family, timezone: string) {
-  return ok(f.client.rpc('update_family', { p_token: f.token, p_name: 'Família Teste', p_timezone: timezone }))
+async function moveTo(f: Family, timezone: string) {
+  await ok(f.client.rpc('update_family', { p_token: f.token, p_name: 'Família Teste', p_timezone: timezone }))
+  f.timezone = timezone
 }
 
 function decide(f: Family, completionId: string, approve: boolean) {

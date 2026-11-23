@@ -5,18 +5,9 @@ import { createPortal } from 'react-dom'
 
 /** The one large confirm button of a card ("Fiz!", "Quero!"). */
 export const BIG_BUTTON =
-  'min-h-20 w-full rounded-[28px] bg-kid text-4xl font-black text-white shadow-[0_6px_0_var(--kid-ink)] transition-[opacity,transform,box-shadow] duration-200 active:translate-y-1 active:shadow-[0_2px_0_var(--kid-ink)] disabled:bg-line disabled:text-muted disabled:shadow-none'
+  'min-h-20 w-full rounded-[28px] bg-kid text-4xl font-black text-[var(--on-kid,white)] shadow-[0_6px_0_var(--kid-ink)] transition-[opacity,transform,box-shadow] duration-200 active:translate-y-1 active:shadow-[0_2px_0_var(--kid-ink)] disabled:bg-line disabled:text-muted disabled:shadow-none'
 
-let openModals = 0
-
-/** Makes the app behind a modal inert. Counted, so a celebration closing over a card keeps the card's background inert. */
-export function holdAppInert() {
-  const root = document.getElementById('root')!
-  root.inert = ++openModals > 0
-  return () => {
-    root.inert = --openModals > 0
-  }
-}
+const dialogs: HTMLElement[] = []
 
 /**
  * A modal dialog's keyboard and focus behavior, shared by the card and the day celebration: the app behind is inert,
@@ -26,10 +17,17 @@ export function useModal(dialog: RefObject<HTMLElement | null>, onEscape: () => 
   const escape = useEffectEvent(onEscape)
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null
-    const release = holdAppInert()
-    dialog.current?.focus()
+    const element = dialog.current
+    if (!element) return
+    const root = document.getElementById('root')!
+    const previous = dialogs.at(-1)
+    if (previous) previous.inert = true
+    dialogs.push(element)
+    root.inert = true
+    element.focus()
 
     const onKey = (event: KeyboardEvent) => {
+      if (dialogs.at(-1) !== element || event.defaultPrevented) return
       if (event.key === 'Escape') {
         event.preventDefault()
         escape()
@@ -50,8 +48,12 @@ export function useModal(dialog: RefObject<HTMLElement | null>, onEscape: () => 
     document.addEventListener('keydown', onKey)
     return () => {
       document.removeEventListener('keydown', onKey)
-      release()
-      opener?.focus({ preventScroll: true })
+      const wasTop = dialogs.at(-1) === element
+      dialogs.splice(dialogs.indexOf(element), 1)
+      const top = dialogs.at(-1)
+      if (top) top.inert = false
+      root.inert = dialogs.length > 0
+      if (wasTop) (opener?.isConnected ? opener : top)?.focus({ preventScroll: true })
     }
   }, [dialog])
 }

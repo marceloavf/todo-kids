@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronLeft, ChevronUp, Minus, Plus } from 'lucide-react'
-import { useId, useState, type ReactNode } from 'react'
+import { cloneElement, isValidElement, useId, useState, type ReactNode } from 'react'
 import { Emoji } from '../lib/Emoji.tsx'
 
 export const INPUT =
@@ -16,17 +16,18 @@ export const CARD = 'rounded-2xl border-2 border-line bg-white'
 export const confirmed = (message: string) => window.confirm(message)
 
 export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
+  const hintId = useId()
   return (
     <label className="flex flex-col gap-1 font-bold">
       <span className="flex items-baseline justify-between gap-2">
         {label}
         {hint && (
-          <span aria-hidden className="text-sm font-semibold text-muted">
+          <span id={hintId} aria-hidden className="text-sm font-semibold text-muted">
             {hint}
           </span>
         )}
       </span>
-      {children}
+      {hint && isValidElement<{ 'aria-describedby'?: string }>(children) ? cloneElement(children, { 'aria-describedby': hintId }) : children}
     </label>
   )
 }
@@ -218,13 +219,13 @@ export function EmojiPicker({
 }
 
 /** Up and down buttons for one item of an ordered list. */
-export function MoveButtons({ name, index, count, onMove }: { name: string; index: number; count: number; onMove: (to: number) => void }) {
+export function MoveButtons({ name, index, count, onMove, busy = false }: { busy?: boolean; name: string; index: number; count: number; onMove: (to: number) => void }) {
   return (
     <>
-      <button type="button" aria-label={`Subir ${name}`} disabled={index === 0} onClick={() => onMove(index - 1)} className={ICON_BUTTON}>
+      <button type="button" aria-label={`Subir ${name}`} disabled={busy || index === 0} onClick={() => onMove(index - 1)} className={ICON_BUTTON}>
         <ChevronUp aria-hidden />
       </button>
-      <button type="button" aria-label={`Descer ${name}`} disabled={index === count - 1} onClick={() => onMove(index + 1)} className={ICON_BUTTON}>
+      <button type="button" aria-label={`Descer ${name}`} disabled={busy || index === count - 1} onClick={() => onMove(index + 1)} className={ICON_BUTTON}>
         <ChevronDown aria-hidden />
       </button>
     </>

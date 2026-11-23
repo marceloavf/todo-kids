@@ -1,5 +1,6 @@
 import { Undo2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
+import { ReadStatus } from '../lib/ReadStatus.tsx'
 import { Emoji } from '../lib/Emoji.tsx'
 import { useFamily, useProfiles } from '../lib/queries.ts'
 import { navigate } from '../lib/route.ts'
@@ -20,15 +21,16 @@ const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0')
 
 /** Extrato of one child: saldo, Ajuste, Estorno of recent approved completions, and the entries newest first. */
 export function Statement({ childId }: { childId?: string }) {
-  const { data: profiles = [], isPending } = useProfiles()
+  const profilesQuery = useProfiles()
+  const profiles = profilesQuery.data ?? []
   const children = profiles.filter((p) => p.kind === 'child')
   const child = children.find((c) => c.id === childId) ?? children[0]
 
-  if (isPending) return null
   return (
     <>
       <Header title="Extrato" />
-      {children.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Cadastre um filho em Família.</p>}
+      <ReadStatus query={profilesQuery} subject="os perfis" />
+      {profilesQuery.isSuccess && children.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Cadastre um filho em Família.</p>}
       {children.length > 1 && (
         <Chips
           label="Filho"
@@ -44,7 +46,8 @@ export function Statement({ childId }: { childId?: string }) {
 
 function ChildStatement({ child }: { child: Profile }) {
   const { data: family } = useFamily()
-  const { data: entries = [] } = useStatement(child.id)
+  const ledger = useStatement(child.id)
+  const entries = ledger.data?.pages.flat() ?? []
   const { data: names } = useProfileNames()
   const when = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: family?.timezone })
 
@@ -61,7 +64,8 @@ function ChildStatement({ child }: { child: Profile }) {
       <AdjustmentForm child={child} />
       <Reversals child={child} />
       <Section title="Lançamentos">
-        {entries.length === 0 && <p className="font-semibold text-muted">Nenhum lançamento ainda.</p>}
+        <ReadStatus query={ledger} subject="os lançamentos" />
+        {ledger.isSuccess && entries.length === 0 && <p className="font-semibold text-muted">Nenhum lançamento ainda.</p>}
         <ul className={`${CARD} divide-y-2 divide-line`}>
           {entries.map((entry) => (
             <li key={entry.id} className="flex items-start gap-3 p-3" data-entry={entry.kind}>
@@ -85,6 +89,7 @@ function ChildStatement({ child }: { child: Profile }) {
             </li>
           ))}
         </ul>
+        {ledger.hasNextPage && <button className={SECONDARY} disabled={ledger.isFetching} onClick={() => void ledger.fetchNextPage()}>Ver lançamentos anteriores</button>}
       </Section>
     </>
   )

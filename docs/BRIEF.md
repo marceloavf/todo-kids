@@ -27,7 +27,7 @@ Points do not expire. The child's balance equals the sum of their statement entr
 | Audience | Screen | Main action |
 | --- | --- | --- |
 | Family | Entry and profiles | Sign in, pair a device, choose a shared-device profile or unlock a guardian profile with its PIN. |
-| Child | Today | See progress, today's task tiles and balance. Open a card for a short description and up to five illustrated steps. Confirm with a second tap. |
+| Child | Today | See progress, balance, and numbered tasks grouped by routine in the guardian's order. The first task still to do is marked **A seguir**. Open a card for a short description and up to five illustrated steps. Confirm with a second tap. |
 | Child | Rewards | Check costs, available points and pending requests. Confirm a request in the reward card. |
 | Guardian | Home | Review pending work and reward requests, approve in bulk, or reject a task with a hint. |
 | Guardian | Routines and rewards | Configure recurring and one-off work, point values and the reward catalog. |

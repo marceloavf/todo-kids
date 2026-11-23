@@ -84,7 +84,7 @@ test('a visitor without a session can neither read nor call anything', async () 
 
   expect((await failure(anon.from('profiles').select('id'))).code).toBe('42501')
   expect((await failure(anon.rpc('today_tasks'))).code).toBe('42501')
-  expect((await failure(anon.rpc('complete_task', { p_task_id: taskId, p_child_id: childId }))).code).toBe('42501')
+  expect((await failure(anon.rpc('complete_task', { p_task_id: taskId, p_child_id: childId, p_expected_day: '2000-01-01' }))).code).toBe('42501')
   expect(
     (await failure(anon.rpc('start_guardian_session', { p_profile_id: a.guardian.id, p_pin: '1234' }))).code,
   ).toBe('42501')

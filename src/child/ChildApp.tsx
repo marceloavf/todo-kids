@@ -3,6 +3,8 @@ import { Users } from 'lucide-react'
 import { AnimatePresence, MotionConfig, animate, motion, useAnimate, useMotionValue, useTransform } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useCalendarDay } from '../lib/family-day.ts'
+import { ReadStatus } from '../lib/ReadStatus.tsx'
 import { Emoji } from '../lib/Emoji.tsx'
 import { useOnline } from '../lib/online.ts'
 import type { TodayTask } from '../lib/parse.ts'
@@ -29,7 +31,8 @@ import { Today } from './Today.tsx'
 
 export function ChildApp({ profileId }: { profileId: string }) {
   const { leaveProfile } = useSession()
-  const { data: profiles, isSuccess } = useProfiles()
+  const profilesQuery = useProfiles()
+  const { data: profiles, isSuccess } = profilesQuery
   const profile = profiles?.find((p) => p.id === profileId && p.kind === 'child')
 
   // Archived or gone (another device changed the family): back to the picker.
@@ -40,12 +43,19 @@ export function ChildApp({ profileId }: { profileId: string }) {
   useEffect(() => {
     if (!profile) return
     document.documentElement.style.setProperty('--kid', profile.color)
+    const channels = profile.color.slice(1).match(/../g)?.map(hex => {
+      const value = parseInt(hex, 16) / 255
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+    })
+    const light = channels && channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722 > 0.179
+    document.documentElement.style.setProperty('--on-kid', light ? '#000' : '#fff')
     return () => {
+      document.documentElement.style.removeProperty('--on-kid')
       document.documentElement.style.removeProperty('--kid')
     }
   }, [profile])
 
-  return profile ? <ChildArea profile={profile} /> : null
+  return profile ? <ChildArea profile={profile} /> : <ReadStatus query={profilesQuery} subject="o perfil" />
 }
 
 type Flight = { from: DOMRect; to: DOMRect; points: number }
@@ -99,11 +109,26 @@ function ChildArea({ profile }: { profile: Profile }) {
   const { session, leaveProfile } = useSession()
   const fx = useChildFx(profile)
   const { data: family } = useFamily()
+  const calendarDay = useCalendarDay(family?.timezone)
+  const [dayNotice, setDayNotice] = useState('')
+  const openDay = useRef<string | null>(null)
+  const dayChanged = useCallback(() => {
+    openDay.current = null
+    navigate('hoje', { replace: true })
+    setDayNotice('O dia mudou. Escolha uma tarefa de hoje.')
+    void queryClient.invalidateQueries({ queryKey: queryKeys.today })
+  }, [queryClient])
   const { data: profiles } = useProfiles()
-  const { data: allTasks } = useTodayTasks()
-  const { data: rewards = [] } = useRewards()
-  const { data: redemptions = [] } = usePendingRedemptions()
+  const todayQuery = useTodayTasks()
+  const allTasks = todayQuery.data
+  const rewardsQuery = useRewards()
+  const pendingQuery = usePendingRedemptions()
+  const redemptions = pendingQuery.data ?? []
   const tasks = (allTasks ?? []).filter((t) => t.child_id === profile.id)
+  useEffect(() => {
+    if (!route[1] || route[0] !== 'hoje') openDay.current = null
+    if (openDay.current && calendarDay && openDay.current !== calendarDay) dayChanged()
+  }, [calendarDay, route, dayChanged])
   const pending = redemptions.find((r) => r.child_id === profile.id)
   const doneCount = tasks.filter((t) => t.status === 'done').length
   const waitingCount = tasks.filter((t) => t.status === 'pending').length
@@ -222,16 +247,17 @@ function ChildArea({ profile }: { profile: Profile }) {
     if (flies) setHeldBalance(profile.balance)
     let completion
     try {
-      completion = await callRpc('complete_task', { p_task_id: task.task_id, p_child_id: profile.id })
+      completion = await callRpc('complete_task', { p_task_id: task.task_id, p_child_id: profile.id, p_expected_day: openDay.current ?? task.day })
     } catch (error) {
       setHeldBalance(null)
+      if (error && typeof error === 'object' && 'message' in error && error.message === 'family_day_changed') dayChanged()
       throw error
     }
     const status = completion.status === 'approved' ? 'done' : 'pending'
     // Marking again clears a "do it again" note.
     queryClient.setQueryData<TodayTask[]>(queryKeys.today, (rows) =>
       rows?.map((row) =>
-        row.task_id === task.task_id && row.child_id === profile.id
+        row.task_id === task.task_id && row.child_id === profile.id && row.day === completion.day
           ? { ...row, status, completion_id: completion.id, rejected_by_name: null, hint: null }
           : row,
       ),
@@ -301,43 +327,64 @@ function ChildArea({ profile }: { profile: Profile }) {
             </div>
             <SaldoPill value={heldBalance ?? profile.balance} reduced={fx.reduced} />
           </div>
-          <div
-            className="mt-3 flex h-3.5 overflow-hidden rounded-full bg-line"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={tasks.length}
-            aria-valuenow={doneCount}
-            aria-valuetext={progress}
-            aria-label="Tarefas feitas hoje"
-          >
-            <motion.div className="h-full bg-kid" initial={false} animate={{ width: width(doneCount) }} transition={barTransition} />
-            {/* Waiting tasks are striped in the waiting color: counted as marked, never as credited. */}
-            <motion.div
-              className="h-full bg-[repeating-linear-gradient(135deg,var(--color-wait)_0_3px,transparent_3px_7px)]"
-              initial={false}
-              animate={{ width: width(waitingCount) }}
-              transition={barTransition}
-            />
-          </div>
-          <p className="mt-1 text-sm font-extrabold text-muted">{progress}</p>
+          {tasks.length > 0 && (
+            <>
+              <div
+                className="mt-3 flex h-3.5 overflow-hidden rounded-full bg-line"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={tasks.length}
+                aria-valuenow={doneCount}
+                aria-valuetext={progress}
+                aria-label="Tarefas feitas hoje"
+              >
+                <motion.div className="h-full bg-kid" initial={false} animate={{ width: width(doneCount) }} transition={barTransition} />
+                {/* Waiting tasks are striped in the waiting color: counted as marked, never as credited. */}
+                <motion.div
+                  className="h-full bg-[repeating-linear-gradient(135deg,var(--color-wait)_0_3px,transparent_3px_7px)]"
+                  initial={false}
+                  animate={{ width: width(waitingCount) }}
+                  transition={barTransition}
+                />
+              </div>
+              <p className="mt-1 text-sm font-extrabold text-muted">{progress}</p>
+            </>
+          )}
         </header>
 
         <motion.main layoutScroll className="flex-1 overflow-x-hidden overflow-y-auto">
           {tab === 'hoje' ? (
-            <Today
-              tasks={tasks}
-              openTaskId={route[1]}
-              guardianName={onlyGuardian}
-              fx={fx}
-              online={online}
-              tapsLocked={cooling || dayPhrase !== null}
-              onOpen={(task) => navigate(`hoje/${task.task_id}`)}
-              onClose={closeCard}
-              onMark={markTask}
-            />
+            <>
+              {dayNotice && <p role="status" className="px-4 py-2 font-bold">{dayNotice}</p>}
+              {todayQuery.isError && (
+                <div role="status" className="mx-3 mb-3 rounded-2xl bg-wait-soft p-4 font-bold">
+                  <p>{allTasks ? 'Não conseguimos atualizar suas tarefas.' : 'Não conseguimos carregar suas tarefas.'}</p>
+                  <button className="mt-1 min-h-12 underline" onClick={() => void todayQuery.refetch()}>Tentar de novo</button>
+                </div>
+              )}
+              {!allTasks && todayQuery.isPending && <p role="status" className="p-4 font-bold">Carregando suas tarefas…</p>}
+              {allTasks && <Today
+                tasks={tasks}
+                openTaskId={route[1]}
+                guardianName={onlyGuardian}
+                fx={fx}
+                online={online}
+                tapsLocked={cooling || dayPhrase !== null}
+                onOpen={(task) => {
+                  openDay.current = task.day
+                  setDayNotice('')
+                  navigate(`hoje/${task.task_id}`)
+                }}
+                onClose={closeCard}
+                onMark={markTask}
+              />}
+            </>
           ) : (
-            <Rewards
-              rewards={rewards}
+            <>
+              <ReadStatus query={rewardsQuery} subject="as recompensas" />
+              <ReadStatus query={pendingQuery} subject="os pedidos" />
+              {rewardsQuery.data && pendingQuery.data && <Rewards
+              rewards={rewardsQuery.data}
               pending={pending}
               balance={profile.balance}
               openRewardId={route[1]}
@@ -346,7 +393,8 @@ function ChildArea({ profile }: { profile: Profile }) {
               onOpen={(reward) => navigate(`recompensas/${reward.id}`)}
               onClose={closeCard}
               onRequest={requestReward}
-            />
+              />}
+            </>
           )}
           {/* Small, muted, and confirmed in a card with an armed button elsewhere on screen, so a stray tap never leaves. */}
           {session.kind !== 'device' && <motion.button
@@ -460,7 +508,7 @@ function FlyingPoints({ flight, onLand }: { flight: Flight; onLand: () => void }
   return createPortal(
     <motion.div
       aria-hidden
-      className="pointer-events-none fixed top-0 left-0 z-[80] -translate-x-1/2 -translate-y-1/2 rounded-full bg-kid px-3 py-1 text-2xl font-black whitespace-nowrap text-white shadow-lg"
+      className="pointer-events-none fixed top-0 left-0 z-[80] -translate-x-1/2 -translate-y-1/2 rounded-full bg-kid px-3 py-1 text-2xl font-black whitespace-nowrap text-[var(--on-kid,white)] shadow-lg"
       initial={{ x: from.x, y: from.y, scale: 0.9, opacity: 0 }}
       animate={{
         x: [from.x, (from.x + to.x) / 2, to.x],

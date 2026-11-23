@@ -23,3 +23,17 @@ jobs:
       - run: npm run db:start
       - run: npm test
       - run: npm run e2e
+      - name: Prepare closed-pilot configuration on the disposable runner
+        run: |
+          node --env-file=.env.local scripts/prepare-pilot-smoke.ts
+          npm run db:stop
+          cat >> supabase/config.toml <<'TOML'
+          [auth.hook.before_user_created]
+          enabled = true
+          uri = "pg-functions://postgres/public/pilot_signup_hook"
+          TOML
+          npm run db:start
+      - name: Rehearse provisioned guardian and paired child on the pilot build
+        env:
+          VITE_FAMILY_PILOT: 'true'
+        run: npm run e2e -- --grep 'dedicated child device'

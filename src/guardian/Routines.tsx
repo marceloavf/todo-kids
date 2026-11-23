@@ -29,8 +29,9 @@ export function Routines() {
   const { names } = useChildNames()
   const action = useAction()
 
+  const [announcement, announce] = useState('')
   const move = (from: number, to: number) =>
-    action.mutate(() => callGuardian('set_routine_order', { p_ids: moved(routines, from, to).map((r) => r.id) }))
+    action.mutate(() => callGuardian('set_routine_order', { p_ids: moved(routines, from, to).map((r) => r.id) }), { onSuccess: () => announce(`${routines[from].name}, posição ${to + 1}.`) })
 
   return (
     <>
@@ -39,8 +40,10 @@ export function Routines() {
           <Plus aria-hidden className="size-5" /> Nova
         </button>
       </Header>
+      {routines.length > 1 && <p className="text-sm font-semibold text-muted">Use as setas para escolher a ordem das rotinas na tela Hoje.</p>}
       <ErrorText>{action.errorText}</ErrorText>
       {!isPending && routines.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Nenhuma rotina ainda.</p>}
+      <p role="status" className="sr-only">{announcement}</p>
       <ul className="flex flex-col gap-2">
         {routines.map((routine, i) => (
           <li key={routine.id} className={`${CARD} flex items-center gap-2 p-2`}>
@@ -52,7 +55,7 @@ export function Routines() {
               </span>
               <ChevronRight aria-hidden className="shrink-0 text-muted" />
             </button>
-            <MoveButtons name={routine.name} index={i} count={routines.length} onMove={(to) => move(i, to)} />
+            <MoveButtons busy={action.isPending} name={routine.name} index={i} count={routines.length} onMove={(to) => move(i, to)} />
           </li>
         ))}
       </ul>
@@ -120,11 +123,12 @@ export function RoutineDetail({ id }: { id: string }) {
   const action = useAction()
   const routine = routines?.find((r) => r.id === id)
 
+  const [announcement, announce] = useState('')
   if (isPending) return null
   if (!routine) return <Header title="Rotina não encontrada" back />
 
   const move = (from: number, to: number) =>
-    action.mutate(() => callGuardian('set_task_order', { p_routine_id: id, p_task_ids: moved(tasks, from, to).map((t) => t.id) }))
+    action.mutate(() => callGuardian('set_task_order', { p_routine_id: id, p_task_ids: moved(tasks, from, to).map((t) => t.id) }), { onSuccess: () => announce(`${tasks[from].name}, posição ${to + 1}.`) })
 
   return (
     <>
@@ -137,12 +141,13 @@ export function RoutineDetail({ id }: { id: string }) {
         {weekdaysText(routine.weekdays)} · {names(routine.child_ids)}
       </p>
       <p className="text-sm font-semibold text-muted">
-        Comece com poucas tarefas (3 a 5 para até 6 anos) e coloque uma nova de cada vez.
+        Use as setas para escolher o que vem primeiro. Na tela Hoje, seu filho vê as tarefas nesta ordem.
       </p>
       <button onClick={() => navigate(`responsavel/rotinas/${id}/tarefa/nova`)} className={`${PRIMARY} w-full`}>
         <Plus aria-hidden className="size-5" /> Nova tarefa
       </button>
       <ErrorText>{action.errorText}</ErrorText>
+      <p role="status" className="sr-only">{announcement}</p>
       {tasks.length === 0 && <p className={`${CARD} p-4 font-semibold text-muted`}>Nenhuma tarefa nesta rotina.</p>}
       <ul className="flex flex-col gap-2">
         {tasks.map((task, i) => (
@@ -156,7 +161,7 @@ export function RoutineDetail({ id }: { id: string }) {
                 </span>
               </span>
             </button>
-            <MoveButtons name={task.name} index={i} count={tasks.length} onMove={(to) => move(i, to)} />
+            <MoveButtons busy={action.isPending} name={task.name} index={i} count={tasks.length} onMove={(to) => move(i, to)} />
             <ArchiveTaskButton task={task} action={action} />
           </li>
         ))}

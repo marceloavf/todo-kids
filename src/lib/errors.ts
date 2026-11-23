@@ -3,6 +3,7 @@ import { ERROR_KEYS, type ErrorKey } from '../error-keys.ts'
 export const ERROR_MESSAGES: Record<ErrorKey, string> = {
   completion_not_approved: 'Essa conclusão não está aprovada.',
   completion_not_pending: 'Essa conclusão já foi decidida.',
+  family_day_changed: 'O dia mudou. Escolha uma tarefa de hoje.',
   family_exists: 'Esta conta já tem uma família.',
   insufficient_balance: 'O saldo não cobre essa recompensa.',
   invalid_amount: 'Digite um valor diferente de zero.',

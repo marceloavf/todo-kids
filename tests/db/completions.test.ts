@@ -187,3 +187,13 @@ test('two children in one routine keep separate completions and points', async (
   expect(await balance(f, sibling.id)).toBe(0)
   expect(await todayTask(f, task.id, sibling.id)).toMatchObject({ status: 'todo' })
 })
+
+test('an older card cannot post a completion into a new family day', async () => {
+  const { f, child, task } = await familyWithTask()
+  expect(await errorKey(f.client.rpc('complete_task', {
+    p_task_id: task.id, p_child_id: child.id, p_expected_day: '2000-01-01',
+  }))).toBe('family_day_changed')
+  expect(await statement(f, child.id)).toEqual([])
+  expect(await balance(f, child.id)).toBe(0)
+  expect(await todayTask(f, task.id, child.id)).toMatchObject({ status: 'todo' })
+})

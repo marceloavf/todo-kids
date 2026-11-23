@@ -1,5 +1,6 @@
 import { Check, X } from 'lucide-react'
 import { useState } from 'react'
+import { ReadStatus } from '../lib/ReadStatus.tsx'
 import { Emoji } from '../lib/Emoji.tsx'
 import { useProfiles, useTodayTasks } from '../lib/queries.ts'
 import { useGuardian } from '../lib/session.tsx'
@@ -13,8 +14,10 @@ export function Home() {
   const { callGuardian } = useGuardian()
   const today = useFamilyToday()
   const { data: profiles = [] } = useProfiles()
-  const { data: completions = [], isPending: loadingCompletions } = usePendingCompletions()
-  const { data: redemptions = [], isPending: loadingRedemptions } = usePendingRedemptionsWithReward()
+  const completionQuery = usePendingCompletions()
+  const completions = completionQuery.data ?? []
+  const redemptionQuery = usePendingRedemptionsWithReward()
+  const redemptions = redemptionQuery.data ?? []
   const { data: tasks = [] } = useTodayTasks()
   const action = useAction()
   // The pending completion whose "do it again" form is open, and its optional hint.
@@ -22,7 +25,7 @@ export function Home() {
   const [hint, setHint] = useState('')
   const children = profiles.filter((p) => p.kind === 'child')
   const child = (id: string) => children.find((c) => c.id === id)
-  const nothingPending = !loadingCompletions && !loadingRedemptions && completions.length === 0 && redemptions.length === 0
+  const nothingPending = completionQuery.isSuccess && redemptionQuery.isSuccess && completions.length === 0 && redemptions.length === 0
 
   const decide = (ids: string[], approve: boolean) =>
     action.mutate(() => callGuardian('decide_completions', { p_completion_ids: ids, p_approve: approve }))
@@ -37,6 +40,8 @@ export function Home() {
     <>
       <Section title="Pendências">
         <ErrorText>{action.errorText}</ErrorText>
+        <ReadStatus query={completionQuery} subject="as conclusões" />
+        <ReadStatus query={redemptionQuery} subject="os pedidos" />
         {nothingPending && <p className={`${CARD} p-4 font-semibold text-muted`}>Nada esperando você.</p>}
         {completions.length > 1 && (
           <>

@@ -10,7 +10,11 @@ import { useAction } from './data.ts'
 import { Avatar, CARD, confirmed, DANGER, EmojiPicker, ErrorText, Field, Header, INPUT, PRIMARY, Section, SECONDARY, Toggle } from './ui.tsx'
 
 // Each keeps white text readable at the child screen's large sizes (contrast of at least 3:1).
-const COLORS = ['#f2603f', '#2f7de1', '#16a34a', '#9333ea', '#db2777', '#0d9488', '#4f46e5', '#b45309']
+const COLOR_NAMES: Record<string, string> = {
+  '#f2603f': 'Coral', '#2f7de1': 'Azul', '#16a34a': 'Verde', '#9333ea': 'Roxo',
+  '#db2777': 'Rosa', '#0d9488': 'Verde-água', '#4f46e5': 'Anil', '#b45309': 'Âmbar',
+}
+const COLORS = Object.keys(COLOR_NAMES)
 
 export function Family() {
   const { data: family } = useFamily()
@@ -185,7 +189,7 @@ function ProfileForm({ profile, kind }: { profile?: Profile; kind: Profile['kind
             <div className="flex flex-wrap gap-2">
               {colors.map((c) => (
                 <label key={c} className="relative grid size-11 cursor-pointer place-items-center rounded-full" style={{ backgroundColor: c }}>
-                  <input type="radio" name="color" value={c} checked={color === c} onChange={() => setColor(c)} aria-label={c} className="peer sr-only" />
+                  <input type="radio" name="color" value={c} checked={color === c} onChange={() => setColor(c)} aria-label={COLOR_NAMES[c] ?? 'Cor personalizada'} className="peer sr-only" />
                   <span className="hidden size-4 rounded-full bg-white peer-checked:block" />
                   <span className="absolute -inset-1 rounded-full peer-checked:ring-3 peer-checked:ring-ink peer-focus-visible:outline-3 peer-focus-visible:outline-ink" />
                 </label>

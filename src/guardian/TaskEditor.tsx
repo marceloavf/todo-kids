@@ -161,7 +161,7 @@ function TaskForm({ routineId, task, today }: { routineId?: string; task?: Task;
 
       <Section title="Como o filho vê">
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-paper p-3" aria-hidden inert>
-          <div className="w-28">
+          <div className="w-full max-w-sm">
             <Tile task={{ ...preview, task_id: 'preview-tile' }} onTap={() => {}} />
           </div>
           <div className="w-full max-w-sm overflow-hidden rounded-[32px] bg-white shadow-md">

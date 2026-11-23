@@ -57,7 +57,7 @@ export function Rewards({
                 }}
                 whileTap={reduced ? undefined : { scale: 0.96 }}
                 style={{ borderRadius: 22 }}
-                aria-label={`${reward.name}. Custa ${reward.cost} pontos. ${requested ? 'Pedido esperando o responsável' : missing ? `Faltam ${missing}` : 'Dá para pedir'}`}
+                aria-label={`${reward.name}. Custa ${reward.cost} pontos. ${requested ? 'Pedido esperando o responsável' : pending ? 'Outro pedido esperando o responsável' : missing ? `Faltam ${missing}` : 'Dá para pedir'}`}
                 className={`relative flex w-full flex-col items-center gap-1.5 border-[3px] px-2 pt-3 pb-2.5 text-center ${requested ? 'border-wait bg-wait-soft' : 'border-line bg-white'}`}
               >
                 <Emoji emoji={reward.icon} className="size-14" />
@@ -79,9 +79,9 @@ export function Rewards({
                 ) : (
                   // 20 px black is WCAG large text: white on every palette color clears its 3:1 (18 px did not reach 4.5:1).
                   <span
-                    className={`grid min-h-11 w-full place-items-center rounded-2xl text-xl font-black ${missing || pending ? 'bg-line text-muted' : 'bg-kid text-white'}`}
+                    className={`grid min-h-11 w-full place-items-center rounded-2xl text-xl font-black ${missing || pending ? 'bg-line text-muted' : 'bg-kid text-[var(--on-kid,white)]'}`}
                   >
-                    Quero!
+                    {pending ? 'Aguarde o outro pedido' : missing ? 'Faltam pontos' : 'Quero!'}
                   </span>
                 )}
               </motion.button>
